@@ -1,4 +1,3 @@
-import os
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -6,12 +5,10 @@ import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 
-directory = os.path.dirname(os.path.abspath(__file__))
-DATAS = pd.read_csv(os.path.join(directory, "CSV", "2025_KSH__Emobiliti.csv"), sep = ";", decimal = ",")
+DATAS = pd.read_csv("https://github.com/aszilagyi1989/EMobilitiStreamlit/raw/refs/heads/main/CSV/2025_KSH__Emobiliti.csv", sep = ";", decimal = ",")
 DATAS["Berendezés leszerelésének dátuma"] = pd.to_datetime(DATAS["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
 DATAS = DATAS[(DATAS["Berendezés leszerelésének dátuma"] > datetime.now()) | (DATAS["Berendezés leszerelésének dátuma"].isna())]
 DATAS["IRSZ_VAROS"] = (DATAS["Töltőberendezés irányítószáma"].astype(str) + " " + DATAS["Töltőberendezés település megnevezése"])
-# st.dataframe(DATAS, hide_index = True)
 
 st.set_page_config(
   layout = "wide",
@@ -33,13 +30,6 @@ with st.sidebar:
     filtered_DATAS = DATAS[DATAS["IRSZ_VAROS"].isin(City)]
   
   Names_All = sorted(filtered_DATAS["Töltőberendezés üzemeltető neve"].unique().tolist())
-  # select_All_Names = st.checkbox("Összes üzemeltető kiválasztása", value = False)
-  # if select_All_Names:
-  #   Name = st.multiselect("Töltőberendezés üzemeltető neve", Names_All, default = Names_All, disabled = True)
-  #   filtered_DATAS = filtered_DATAS.copy()
-  # else:
-  #   Name = st.multiselect("Töltőberendezés üzemeltető neve", Names_All)
-  #   filtered_DATAS = filtered_DATAS[filtered_DATAS["Töltőberendezés üzemeltető neve"].isin(Name)]
   Name = st.multiselect("Töltőberendezés üzemeltető neve", Names_All)
   filtered_DATAS = filtered_DATAS[filtered_DATAS["Töltőberendezés üzemeltető neve"].isin(Name)]
   
