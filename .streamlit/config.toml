@@ -1,0 +1,6 @@
+[theme]
+base = "light"
+primaryColor = "#007BFF"       # Elektromos kék (figyelemfelkeltő interakciókhoz)
+backgroundColor = "#F0FFFF"    # Jégkék háttér
+secondaryBackgroundColor = "#D6EAF8" # Kicsit sötétebb kék az oldalsávnak
+textColor = "#0F172A"          # Majdnem fekete a tökéletes kontrasztért
