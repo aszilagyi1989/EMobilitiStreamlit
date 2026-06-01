@@ -157,7 +157,7 @@ with tab3:
     centroids = kmeans.cluster_centers_
     
     # 3. Megjelenítés egy interaktív Plotly térképen
-    fig_ml = px.scatter_mapbox(
+    fig_ml = px.scatter_map(
       filtered_Locations,
       lat = "Töltőberendezés GPSKoordiN",
       lon = "Töltőberendezés GPSKoordiE",
