@@ -23,13 +23,8 @@ st.set_page_config(
 
 with st.sidebar:
   Cities_All = sorted(DATAS["IRSZ_VAROS"].unique().tolist())
-  select_All_Cities = st.checkbox("Összes település kiválasztása", value = False)
-  if select_All_Cities:
-    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, default = Cities_All, disabled = True)
-    filtered_DATAS = DATAS.copy()
-  else:
-    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, "1007 Budapest")
-    filtered_DATAS = DATAS[DATAS["IRSZ_VAROS"].isin(City)]
+  City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, "1007 Budapest")
+  filtered_DATAS = DATAS[DATAS["IRSZ_VAROS"].isin(City)]
   
   Names_All = sorted(filtered_DATAS["Töltőberendezés üzemeltető neve"].unique().tolist())
   Name = st.multiselect("Töltőberendezés üzemeltető neve", Names_All)
