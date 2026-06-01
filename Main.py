@@ -163,22 +163,22 @@ with tab3:
     
     # 3. Megjelenítés egy interaktív Plotly térképen
     fig_ml = px.scatter_mapbox(
-        filtered_Locations,
-        lat = "Töltőberendezés GPSKoordiN",
-        lon = "Töltőberendezés GPSKoordiE",
-        color = filtered_Locations['Klaszter_ID'].astype(str),
-        hover_name = "Töltőberendezés üzemeltető neve",
-        hover_data = ["IRSZ_VAROS"],
-        zoom = 6,
-        height = 500,
-        title = "Töltőberendezések csoportosítása földrajzi elhelyezkedés alapján"
+      filtered_Locations,
+      lat = "Töltőberendezés GPSKoordiN",
+      lon = "Töltőberendezés GPSKoordiE",
+      color = filtered_Locations['Klaszter_ID'].astype(str),
+      hover_name = "Töltőberendezés üzemeltető neve",
+      hover_data = ["IRSZ_VAROS"],
+      zoom = 6,
+      height = 500,
+      title = "Töltőberendezések csoportosítása földrajzi elhelyezkedés alapján"
     )
     
     # Ingyenes, regisztráció nélkül működő térképstílus beállítása
     fig_ml.update_layout(
-        mapbox_style = "open-street-map",
-        margin = {"r":0, "t":40, "l":0, "b":0},
-        legend_title = "Klaszter azonosító"
+      mapbox_style = "open-street-map",
+      margin = {"r":0, "t":40, "l":0, "b":0},
+      legend_title = "Klaszter azonosító"
     )
     
     st.plotly_chart(fig_ml, width = 'stretch') # 'content'
@@ -186,8 +186,8 @@ with tab3:
     # Statisztika mutatása a klaszterekről
     st.subheader("Gócok statisztikái")
     for i in range(num_clusters):
-        cluster_data = filtered_Locations[filtered_Locations['Klaszter_ID'] == i]
-        st.write(f"**{i}. számú csoport:** {len(cluster_data)} db töltőállomást tartalmaz ezen a területen.")
+      cluster_data = filtered_Locations[filtered_Locations['Klaszter_ID'] == i]
+      st.write(f"**{i}. számú csoport:** {len(cluster_data)} db töltőállomást tartalmaz ezen a területen.")
         
   else:
     st.warning("A gépi tanulási modell futtatásához legalább 3 darab töltőberendezést kell kiválasztania a szűrőkkel.")

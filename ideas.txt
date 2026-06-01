@@ -1,0 +1,61 @@
+Data Analyst (Adatelemzői) műveletekEzek a vizualizációk és statisztikák 
+segítenek a felhasználónak gyorsan átlátni a piaci helyzetet.
+
+1. Piaci koncentráció és operátori rangsor (Leaderboard)
+Megvalósítás: 
+Készítsen egy vízszintes oszlopdiagramot (st.bar_chart vagy Plotly) a 
+legfontosabb üzemeltetőkről.
+
+Kérdés, amire választ ad: Ki a piacvezető? 
+Ki birtokolja a töltőpontok 50%-át?
+Oszlopok: Töltőberendezés üzemeltető neve és a darabszámok összege.
+
+2. Teljesítmény-kategóriák szerinti csoportosítás (AC vs. DC arány)
+Megvalósítás: Egy megoszlási fánkdiagram (Donut chart).
+Kérdés, amire választ ad: 
+A lassabb, éjszakai AC (Type2, Egyéb AC) vagy a gyors utazási DC (CCS2, Chademo) 
+töltők dominálnak az országban/megyében?
+
+Oszlopok: Az AC és DC teljesítmény oszlopok összegei.
+
+3. Földrajzi lefedettség és fehér foltok elemzése
+Megvalósítás: Településszintű aggregáció, ahol kiszámolja az egy településre 
+jutó összes töltési kapacitást (kW).
+Kérdés, amire választ ad: Melyek azok a városok, ahol kiemelkedően magas 
+a töltési kapacitás, és hol vannak "fehér foltok" (ahol alig van kW)?
+
+🤖 Data Scientist (Adattudósi) műveletek
+Ezekhez a műveletekhez már gépi tanulási (Machine Learning) vagy 
+statisztikai modelleket érdemes használni.
+
+1. Klaszterezés (Clustering - K-Means)
+Megvalósítás: Csoportosítsa a töltőállomásokat a földrajzi helyzetük 
+(GPS koordináták) és az összteljesítményük alapján 4-5 fő csoportba 
+(pl. Scikit-learn segítségével).
+Cél: Automatikusan azonosítani a "Töltő-hubokat" 
+(autópálya melletti nagy DC hubok) és elkülöníteni őket a városi, 
+kis teljesítményű "szórt" töltőktől. 
+A térképen a markerek színét ezen klaszterek alapján lehetne színezni.
+
+2. Töltőhálózati anomália-detektálás (Anomaly Detection)
+Megvalósítás: Isolation Forest vagy IQR (Interquartile Range) 
+módszerrel keresni az átlagtól durván eltérő adatsorokat.
+
+Cél: Kiszűrni az adatbázisból azokat a töltőket, ahol hibás lehet az 
+adatrögzítés 
+(pl. irreálisan magas kW érték szerepel kevés darabszámhoz, vagy fordítva).
+
+3. Leszerelési/Múlási ráta elemzés (Survival Analysis)
+Megvalósítás: Mivel a CSV tartalmazza a Berendezés leszerelésének 
+dátuma oszlopot, elemezhető, hogy a töltők mennyi idő után kerülnek 
+leszerelésre.
+
+Cél: Megbecsülni egy adott típusú vagy adott üzemeltetőhöz tartozó 
+töltőberendezés átlagos "élettartamát" a piacon.
+
+
+
+
+Külön kérdés:
+Szeretné-e a megyei szintű csoportosítást is behozni az irányítószámok 
+első számjegyei alapján?
