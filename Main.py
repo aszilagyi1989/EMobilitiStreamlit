@@ -85,6 +85,11 @@ for index, row in filtered_Locations.iterrows():
   ).add_to(marker_cluster)
 
 
+if not filtered_Locations.empty:
+  sw = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].min().tolist()
+  ne = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].max().tolist()
+  map.fit_bounds([sw, ne])
+
 st_folium(map, use_container_width = True, height = 600)
 
 sorok_szama, oszlopok_szama = DATAS.shape
