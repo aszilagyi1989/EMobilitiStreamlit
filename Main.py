@@ -4,12 +4,13 @@ from datetime import datetime
 import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
+import plotly.express as px
 
 DATAS = pd.read_csv("https://github.com/aszilagyi1989/EMobilitiStreamlit/raw/refs/heads/main/CSV/2025_KSH__Emobiliti.csv", sep = ";", decimal = ",")
 DATAS["Berendezés leszerelésének dátuma"] = pd.to_datetime(DATAS["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
 DATAS = DATAS[(DATAS["Berendezés leszerelésének dátuma"] > datetime.now()) | (DATAS["Berendezés leszerelésének dátuma"].isna())]
 DATAS["IRSZ_VAROS"] = (DATAS["Töltőberendezés irányítószáma"].astype(str) + " " + DATAS["Töltőberendezés település megnevezése"])
-
+        
 st.set_page_config(
   layout = "wide",
   page_title = "OSAP 2607 - E-töltőállomások regiszter adatai",
@@ -57,6 +58,7 @@ with st.sidebar:
   else:
     filtered_Locations = pd.DataFrame(columns = filtered_DATAS.columns)
   
+
 tab1, tab2, tab3 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Intelligens Modellek (Scientist)"])
 
 with tab1:
@@ -102,3 +104,40 @@ with tab1:
   
   with col2:
     st.metric(label = "Térképen mutatot üzemben lévő töltőberendezés", value = f"{sorok_szama2} db")
+
+with tab2:
+  if not filtered_Locations.empty:
+    st.subheader("Top Üzemeltetők töltőállomások száma alapján")
+    operator_counts = filtered_Locations["Töltőberendezés üzemeltető neve"].value_counts().reset_index()
+    operator_counts.columns = ["Üzemeltető", "Töltőberendezések száma [db]"]
+    
+    fig = px.bar(
+        operator_counts.head(10), 
+        x = "Üzemeltető", 
+        y = "Töltőberendezések száma [db]",
+        labels = {"Töltőberendezések száma [db]": "Töltők száma (db)"}
+    )
+    
+    st.plotly_chart(fig, width = 'stretch') # 'content'
+  
+    st.subheader("Összegzett csatlakozási teljesítmények (kw)")
+    total_kw = {
+        "Type2 AC": filtered_Locations['Type2 csatlakozó teljesítménye [kW, per darab]'].sum(),
+        "Egyéb AC": filtered_Locations['Egyéb AC csatlakozó teljesítménye [kW, per darab]'].sum(),
+        "CCS2 DC": filtered_Locations['CCS2 csatlakozó teljesítménye [kW, per darab]'].sum(),
+        "Chademo DC": filtered_Locations['Chademo csatlakozó teljesítménye [kW, per darab]'].sum(),
+        "Egyéb DC": filtered_Locations['Egyéb DC csatlakozó teljesítménye [kW, per darab]'].sum()
+    }
+    kw_df = pd.DataFrame(list(total_kw.items()), columns=["Csatlakozó típus", "Összteljesítmény [kW]"])
+    
+    fig2 = px.bar(
+        kw_df, 
+        x = "Csatlakozó típus", 
+        y = "Összteljesítmény [kW]" #,
+        # labels = {"Töltőberendezések száma [db]": "Töltők száma (db)"}
+    )
+    
+    st.plotly_chart(fig2, width = 'stretch') # 'content'
+  
+  else:
+    st.warning("Nincs megjeleníthető adat a jelenlegi szűrési feltételek mellett.")
