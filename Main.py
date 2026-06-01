@@ -57,46 +57,48 @@ with st.sidebar:
   else:
     filtered_Locations = pd.DataFrame(columns = filtered_DATAS.columns)
   
+tab1, tab2, tab3 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Intelligens Modellek (Scientist)"])
+
+with tab1:
+  map = folium.Map(location = [47.1625, 19.5033], zoom_start = 7)
+  marker_cluster = MarkerCluster().add_to(map)
+    
+  for index, row in filtered_Locations.iterrows():
+    message = ""
+    if selected_plugs:
+      if "Type2" in selected_plugs and row['Type2 csatlakozó darabszáma [db]'] != 0:
+        message += f"<br>Type2 teljesítmény, darabszám: {row['Type2 csatlakozó teljesítménye [kW, per darab]'] / row['Type2 csatlakozó darabszáma [db]']:.0f} kw, {row['Type2 csatlakozó darabszáma [db]']} db"
+      
+      if "Egyéb AC" in selected_plugs and row['Egyéb AC csatlakozó darabszáma [db]'] != 0:
+        message += f"<br>Egyéb AC teljesítmény, darabszám: {row['Egyéb AC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb AC csatlakozó darabszáma [db]']:.0f} kw, {row['Egyéb AC csatlakozó darabszáma [db]']} db"
+      
+      if "CCS2" in selected_plugs and row['CCS2 csatlakozó darabszáma [db]'] != 0:
+        message += f"<br>CCS2 teljesítmény, darabszám: {row['CCS2 csatlakozó teljesítménye [kW, per darab]'] / row['CCS2 csatlakozó darabszáma [db]']:.0f} kw, {row['CCS2 csatlakozó darabszáma [db]']} db"
+          
+      if "Chademo" in selected_plugs and row['Chademo csatlakozó darabszáma [db]'] != 0:
+        message += f"<br>Chademo teljesítmény, darabszám: {row['Chademo csatlakozó teljesítménye [kW, per darab]'] / row['Chademo csatlakozó darabszáma [db]']:.0f} kw, {row['Chademo csatlakozó darabszáma [db]']} db"
+          
+      if "Egyéb DC" in selected_plugs and row['Egyéb DC csatlakozó darabszáma [db]'] != 0:
+        message += f"<br>Egyéb DC teljesítmény és darabszám: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw, és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
+      
+    folium.Marker(
+      location = [row["Töltőberendezés GPSKoordiN"], row["Töltőberendezés GPSKoordiE"]],
+      popup = f"Üzemeltető: {row['Töltőberendezés üzemeltető neve']}<br>Cím: {(row['IRSZ_VAROS'] + ", " + row['Töltőberendezés közterülete'])} {message}"
+    ).add_to(marker_cluster)
   
-map = folium.Map(location = [47.1625, 19.5033], zoom_start = 7)
-marker_cluster = MarkerCluster().add_to(map)
   
-for index, row in filtered_Locations.iterrows():
-  message = ""
-  if selected_plugs:
-    if "Type2" in selected_plugs and row['Type2 csatlakozó darabszáma [db]'] != 0:
-      message += f"<br>Type2 teljesítmény, darabszám: {row['Type2 csatlakozó teljesítménye [kW, per darab]'] / row['Type2 csatlakozó darabszáma [db]']:.0f} kw, {row['Type2 csatlakozó darabszáma [db]']} db"
-    
-    if "Egyéb AC" in selected_plugs and row['Egyéb AC csatlakozó darabszáma [db]'] != 0:
-      message += f"<br>Egyéb AC teljesítmény, darabszám: {row['Egyéb AC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb AC csatlakozó darabszáma [db]']:.0f} kw, {row['Egyéb AC csatlakozó darabszáma [db]']} db"
-    
-    if "CCS2" in selected_plugs and row['CCS2 csatlakozó darabszáma [db]'] != 0:
-      message += f"<br>CCS2 teljesítmény, darabszám: {row['CCS2 csatlakozó teljesítménye [kW, per darab]'] / row['CCS2 csatlakozó darabszáma [db]']:.0f} kw, {row['CCS2 csatlakozó darabszáma [db]']} db"
-        
-    if "Chademo" in selected_plugs and row['Chademo csatlakozó darabszáma [db]'] != 0:
-      message += f"<br>Chademo teljesítmény, darabszám: {row['Chademo csatlakozó teljesítménye [kW, per darab]'] / row['Chademo csatlakozó darabszáma [db]']:.0f} kw, {row['Chademo csatlakozó darabszáma [db]']} db"
-        
-    if "Egyéb DC" in selected_plugs and row['Egyéb DC csatlakozó darabszáma [db]'] != 0:
-      message += f"<br>Egyéb DC teljesítmény és darabszám: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw, és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
-    
-  folium.Marker(
-    location = [row["Töltőberendezés GPSKoordiN"], row["Töltőberendezés GPSKoordiE"]],
-    popup = f"Üzemeltető: {row['Töltőberendezés üzemeltető neve']}<br>Cím: {(row['IRSZ_VAROS'] + ", " + row['Töltőberendezés közterülete'])} {message}"
-  ).add_to(marker_cluster)
-
-
-if not filtered_Locations.empty:
-  sw = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].min().tolist()
-  ne = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].max().tolist()
-  map.fit_bounds([sw, ne])
-
-st_folium(map, use_container_width = True, height = 600)
-
-sorok_szama, oszlopok_szama = DATAS.shape
-sorok_szama2, oszlopok_szama2 = filtered_Locations.shape
-col1, col2 = st.columns(2)
-with col1:
-  st.metric(label = "Összes regisztrált üzemben lévő töltőberendezés", value = f"{sorok_szama} db")
-
-with col2:
-  st.metric(label = "Térképen mutatot üzemben lévő töltőberendezés", value = f"{sorok_szama2} db")
+  if not filtered_Locations.empty:
+    sw = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].min().tolist()
+    ne = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].max().tolist()
+    map.fit_bounds([sw, ne])
+  
+  st_folium(map, use_container_width = True, height = 600)
+  
+  sorok_szama, oszlopok_szama = DATAS.shape
+  sorok_szama2, oszlopok_szama2 = filtered_Locations.shape
+  col1, col2 = st.columns(2)
+  with col1:
+    st.metric(label = "Összes regisztrált üzemben lévő töltőberendezés", value = f"{sorok_szama} db")
+  
+  with col2:
+    st.metric(label = "Térképen mutatot üzemben lévő töltőberendezés", value = f"{sorok_szama2} db")
