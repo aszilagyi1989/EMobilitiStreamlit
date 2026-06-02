@@ -7,11 +7,17 @@ from streamlit_folium import st_folium
 import plotly.express as px
 from sklearn.cluster import KMeans
 
-DATAS = pd.read_csv("https://github.com/aszilagyi1989/EMobilitiStreamlit/raw/refs/heads/main/CSV/2025_KSH__Emobiliti.csv", sep = ";", decimal = ",")
-DATAS["Berendezés leszerelésének dátuma"] = pd.to_datetime(DATAS["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
-DATAS = DATAS[(DATAS["Berendezés leszerelésének dátuma"] > datetime.now()) | (DATAS["Berendezés leszerelésének dátuma"].isna())]
-DATAS["IRSZ_VAROS"] = (DATAS["Töltőberendezés irányítószáma"].astype(str) + " " + DATAS["Töltőberendezés település megnevezése"])
-        
+@st.cache_data
+def load_data():
+  df = pd.read_csv("https://github.com/aszilagyi1989/EMobilitiStreamlit/raw/refs/heads/main/CSV/2025_KSH__Emobiliti.csv", sep = ";", decimal = ",")
+  df["Berendezés leszerelésének dátuma"] = pd.to_datetime(df["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
+  df = df[(df["Berendezés leszerelésének dátuma"] > datetime.now()) | (df["Berendezés leszerelésének dátuma"].isna())]
+  df["IRSZ_VAROS"] = (df["Töltőberendezés irányítószáma"].astype(str) + " " + df["Töltőberendezés település megnevezése"])
+
+  return df
+
+DATAS = load_data()
+
 st.set_page_config(
   layout = "wide",
   page_title = "OSAP 2607 - E-töltőállomások regiszter adatai",
