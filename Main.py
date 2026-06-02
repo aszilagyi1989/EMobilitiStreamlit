@@ -36,9 +36,15 @@ st.set_page_config(
 )
 
 with st.sidebar:
-  Cities_All = sorted(DATAS["IRSZ_VAROS"].unique().tolist())
-  City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, "1007 Budapest")
-  filtered_DATAS = DATAS[DATAS["IRSZ_VAROS"].isin(City)]
+  full_City = st.checkbox("Csak településnevek (irányítószám nélkül)")
+  if full_City:
+    Cities_All = sorted(DATAS["Töltőberendezés település megnevezése"].unique().tolist())
+    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, "Budapest")
+    filtered_DATAS = DATAS[DATAS["Töltőberendezés település megnevezése"].isin(City)]
+  else:
+    Cities_All = sorted(DATAS["IRSZ_VAROS"].unique().tolist())
+    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, "1007 Budapest")
+    filtered_DATAS = DATAS[DATAS["IRSZ_VAROS"].isin(City)]
   
   Names_All = sorted(filtered_DATAS["Töltőberendezés üzemeltető neve"].unique().tolist())
   Name = st.multiselect("Töltőberendezés üzemeltető neve", Names_All)
@@ -69,7 +75,7 @@ with st.sidebar:
     filtered_Locations = pd.DataFrame(columns = filtered_DATAS.columns)
   
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Klaszterezés (Scientist)", "⚠️ Adathibák & Anomáliák", "⏳ Élettartam Elemzés"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Klaszterezés (Scientist)", "⚠️ Adathibák & Anomáliák", "⏳ Élettartam Elemzés", "⚪ Fehér Foltok Elemzése"])
 
 with tab1:
   map = folium.Map(location = [47.1625, 19.5033], zoom_start = 7)
@@ -104,7 +110,7 @@ with tab1:
     ne = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].max().tolist()
     map.fit_bounds([sw, ne])
   
-  st_folium(map, use_container_width = True, height = 600)
+  st_folium(map, width = 'stretch', height = 600)
   
   sorok_szama, oszlopok_szama = DATAS.shape
   sorok_szama2, oszlopok_szama2 = filtered_Locations.shape
@@ -415,3 +421,96 @@ with tab5:
           st.dataframe(pd.DataFrame(summary_stats), width = 'stretch', hide_index = True)
           
           st.info("💡 **Hogyan olvassa a grafikont?** A függőleges tengely azt mutatja, hogy az üzembe helyezést követő X. hónapban a töltők hány százaléka üzemel még. A meredeken lefelé zuhanó vonalak korai leszerelési hullámot jeleznek az adott üzemeltetőnél.")
+
+with tab6:
+  st.header("⚪ Földrajzi Lefedettség és Fehér Foltok Elemzése")
+  st.write("Ez a modul a településszintű összesített töltési kapacitásokat (kW) vizsgálja, rávilágítva a túlreprezentált körzetekre és a töltőhálózat fehér foltjaira.")
+
+  white_DATAS = filtered_DATAS.copy() # load_data()
+  # A szűrők által érintett, de már megtisztított adatokat használjuk (filtered_Locations helyett filtered_DATAS-ból érdemes dolgozni, hogy a plug_mask ne zavarjon be)
+  if white_DATAS.empty:
+    st.warning("Nincs megjeleníthető adat a jelenlegi szűrési feltételek mellett.")
+  else:
+    # 1. Településszintű aggregáció (kW és töltők száma)
+    city_coverage = white_DATAS.groupby("Töltőberendezés település megnevezése").agg(
+        Összes_Kapacitás_kW=('Töltőberendezés által felvehető maximális teljesítmény [kW]', 'sum'),
+        Töltőberendezések_Száma=('Csatlakozási pontok száma összesen', 'count')
+    ).reset_index()
+
+    # Kiszámoljuk az egy berendezésre jutó átlagos teljesítményt is a városban
+    city_coverage['Átlagos_Kapacitás_kW'] = (city_coverage['Összes_Kapacitás_kW'] / city_coverage['Töltőberendezések_Száma']).round(1)
+    
+    # Sorbarendezzük kapacitás szerint
+    city_coverage = city_coverage.sort_values(by="Összes_Kapacitás_kW", ascending=False)
+
+    # --- VIZUALIZÁCIÓ 1: TOP ELLÁTOTT VÁROSOK ---
+    st.subheader("🚀 Legmagasabb töltési kapacitással rendelkező települések")
+    
+    top_n = st.slider(
+        "Megjelenítendő települések száma a toplistán:", 
+        min_value = 5, 
+        max_value = min(45, len(city_coverage)), 
+        value = 15, 
+        step = 1
+    )
+    
+    # Kiválasztjuk a top n várost (Budapestet érdemes lehet külön figyelni, mert elviheti a pálmát)
+    fig_top_cities = px.bar(
+        city_coverage.head(top_n),
+        x="Töltőberendezés település megnevezése",
+        y="Összes_Kapacitás_kW",
+        color="Töltőberendezések_Száma",
+        labels={
+            "Töltőberendezés település megnevezése": "Település",
+            "Összes_Kapacitás_kW": "Összteljesítmény (kW)",
+            "Töltőberendezések_Száma": "Töltők száma (db)"
+        },
+        title = f"Top {top_n} település a hálózati összteljesítmény (kW) alapján",
+        color_continuous_scale = px.colors.sequential.Viridis
+    )
+    st.plotly_chart(fig_top_cities, width = 'stretch')
+
+    # --- VIZUALIZÁCIÓ 2: FEHÉR FOLTOK ---
+    st.subheader("⚪ Alacsony kapacitású területek (Fehér foltok)")
+    st.write("Azok a települések a kijelölt listából, ahol a teljesített hálózati kapacitás kritizálhatóan alacsony (az összteljesítmény nem éri el a 22 kW-ot, vagy alig van csatlakozó).")
+    
+    # Fehér foltnak minősítjük, ahol az összkapacitás nagyon kevés, de nagyobb mint 0 (a valódi 0-kat az anomáliánál szűrtük)
+    white_spots = city_coverage[city_coverage["Összes_Kapacitás_kW"] <= 22].sort_values(by="Összes_Kapacitás_kW")
+
+    if white_spots.empty:
+      st.success("🎉 A jelenleg kiválasztott települések mindegyike rendelkezik legalább 22 kW feletti összteljesítménnyel!")
+    else:
+      col_table, col_info = st.columns([2, 1])
+      
+      with col_table:
+        st.dataframe(
+            white_spots.rename(columns={
+                "Töltőberendezés település megnevezése": "Település neve",
+                "Összes_Kapacitás_kW": "Összkapacitás (kW)",
+                "Töltőberendezések_Száma": "Regisztrált töltők (db)",
+                "Átlagos_Kapacitás_kW": "Átlagos töltőméret (kW)"
+            }), 
+            width = 'stretch', 
+            hide_index = True
+        )
+      
+      with col_info:
+        st.metric("Azonosított fehér folt település", f"{len(white_spots)} db")
+        st.info("💡 **Fejlesztési javaslat:** Ezeken a településeken az elektromos autóval érkezők szinte kizárólag éjszakai vagy rendkívül lassú lakossági tempóban tudnak tölteni. Kereskedelmi szempontból ezek a helyszínek ideálisak lehetnek új DC gyorstöltők telepítésére.")
+
+    # --- VIZUALIZÁCIÓ 3: TELJESÍTMÉNY ELOSZLÁS (Bubble chart) ---
+    st.subheader("🎯 Települések infrastrukturális összehasonlítása")
+    
+    fig_bubble = px.scatter(
+        city_coverage,
+        x = "Töltőberendezések_Száma",
+        y = "Összes_Kapacitás_kW",
+        size = "Átlagos_Kapacitás_kW",
+        hover_name = "Töltőberendezés település megnevezése",
+        labels = {
+            "Töltőberendezések_Száma": "Töltőberendezések száma (db)",
+            "Összes_Kapacitás_kW": "Összesített kapacitás (kW)"
+        },
+        title = "Települések elhelyezkedése a darabszám és összteljesítmény mátrixában (A buborék mérete az átlagos kW méretét jelzi)",
+    )
+    st.plotly_chart(fig_bubble, width = 'stretch')
