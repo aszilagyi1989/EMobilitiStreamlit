@@ -16,6 +16,14 @@ def load_data():
 
   return df
 
+@st.cache_data
+def load_data2():
+  df = pd.read_csv("https://github.com/aszilagyi1989/EMobilitiStreamlit/raw/refs/heads/main/CSV/2025_KSH__Emobiliti.csv", sep = ";", decimal = ",")
+  df["Berendezés leszerelésének dátuma"] = pd.to_datetime(df["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
+  df["IRSZ_VAROS"] = (df["Töltőberendezés irányítószáma"].astype(str) + " " + df["Töltőberendezés település megnevezése"])
+
+  return df
+
 DATAS = load_data()
 
 st.set_page_config(
@@ -61,7 +69,7 @@ with st.sidebar:
     filtered_Locations = pd.DataFrame(columns = filtered_DATAS.columns)
   
 
-tab1, tab2, tab3 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Intelligens Modellek (Scientist)"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Klaszterezés (Scientist)", "⚠️ Adathibák & Anomáliák", "⏳ Élettartam Elemzés"])
 
 with tab1:
   map = folium.Map(location = [47.1625, 19.5033], zoom_start = 7)
@@ -193,4 +201,217 @@ with tab3:
   else:
     st.warning("A gépi tanulási modell futtatásához legalább 3 darab töltőberendezést kell kiválasztania a szűrőkkel.")
     
-  
+with tab4:
+  st.header("⚠️ Adathibák & Anomáliák")
+  st.write("Ez a modul a teljes KSH adatbázis matematikai és logikai ellentmondásait szűri ki, függetlenül a sidebar szűrőitől.")
+
+  # JAVÍTÁS: A szűretlen nyers adatbázisból indulunk ki, hogy a sidebar ne rejtse el a hibákat!
+  RAW_ANOMALY_DATA = load_data()
+
+  if RAW_ANOMALY_DATA.empty:
+    st.warning("A nyers adatbázis nem elérhető.")
+  else:
+    anomaly_df = RAW_ANOMALY_DATA.copy()
+
+    # 1. Összesítjük a fizikai darabszámokat
+    anomaly_df['Fizikai_AC_Darabszám'] = (
+        anomaly_df['Type2 csatlakozó darabszáma [db]'].fillna(0) + 
+        anomaly_df['Egyéb AC csatlakozó darabszáma [db]'].fillna(0)
+    )
+    anomaly_df['Fizikai_DC_Darabszám'] = (
+        anomaly_df['CCS2 csatlakozó darabszáma [db]'].fillna(0) + 
+        anomaly_df['Chademo csatlakozó darabszáma [db]'].fillna(0) + 
+        anomaly_df['Egyéb DC csatlakozó darabszáma [db]'].fillna(0)
+    )
+    anomaly_df['Összes_Fizikai_Csatlakozó'] = anomaly_df['Fizikai_AC_Darabszám'] + anomaly_df['Fizikai_DC_Darabszám']
+
+    # 2. Összesítjük a részletező kategória oszlopok darabszámait
+    anomaly_df['Kategória_AC_Darabszám'] = (
+        anomaly_df['Csatlakozó darabszám: Slow AC: P <7.4 kW [db]'].fillna(0) +
+        anomaly_df['Csatlakozó darabszám: Medium-speed AC: 7.4 kW ≤ P ≤ 22 kW  [db]'].fillna(0) +
+        anomaly_df['Csatlakozó darabszám: Fast AC: P > 22 kW  [db]'].fillna(0)
+    )
+    anomaly_df['Kategória_DC_Darabszám'] = (
+        anomaly_df['Csatozó darabszám: Slow DC: P < 50 kW  [db]'] if 'Csatozó darabszám: Slow DC: P < 50 kW  [db]' in anomaly_df.columns else anomaly_df['Csatlakozó darabszám: Slow DC: P < 50 kW  [db]'].fillna(0) +
+        anomaly_df['Csatlakozó darabszám: Fast DC: 50 kW ≤ P < 150 kW  [db]'].fillna(0) +
+        anomaly_df['Csatlakozó darabszám: Level 1- Ultra fast DC: 150 kW ≤ P < 350 kW  [db]'].fillna(0) +
+        anomaly_df['Csatlakozó darabszám: Level 2- Ultra fast DC: P ≥ 350 kW  [db]'].fillna(0)
+    )
+
+    # --- ANOMÁLIA SZABÁLYOK ---
+
+    # A: Magyarbóly-típusú hiba (Van max kW, de 0 db az összes fizikai csatlakozó)
+    anomaly_df['Fantom_Töltő_Hiba'] = (
+        (anomaly_df['Töltőberendezés által felvehető maximális teljesítmény [kW]'].fillna(0) > 0) & 
+        (anomaly_df['Összes_Fizikai_Csatlakozó'] == 0)
+    )
+
+    # B: Darabszámbeli ellentmondás hiba (A fizikai és a kategória oszlopok összege eltér)
+    anomaly_df['Kategória_Ellentmondás_Hiba'] = (
+        (anomaly_df['Fizikai_AC_Darabszám'] != anomaly_df['Kategória_AC_Darabszám']) | 
+        (anomaly_df['Fizikai_DC_Darabszám'] != anomaly_df['Kategória_DC_Darabszám'])
+    )
+
+    # C: Főösszeg hiba (A 'Csatlakozási pontok száma összesen' nem egyezik a fizikai oszlopok összegével)
+    anomaly_df['Főösszeg_Eltérés_Hiba'] = (
+        anomaly_df['Csatlakozási pontok száma összesen'].fillna(0) != anomaly_df['Összes_Fizikai_Csatlakozó']
+    )
+
+    # Végleges szűrés kombinálása
+    anomaly_df['Is_Anomaly'] = (
+        anomaly_df['Fantom_Töltő_Hiba'] | 
+        anomaly_df['Kategória_Ellentmondás_Hiba'] |
+        anomaly_df['Főösszeg_Eltérés_Hiba']
+    )
+    
+    anomalies = anomaly_df[anomaly_df['Is_Anomaly'] == True]
+    
+    st.metric("Azonosított valós adathibák száma a teljes adatbázisban", f"{len(anomalies)} db")
+
+    if not anomalies.empty:
+      st.error("⚠️ Logikai vagy matematikai ellentmondást tartalmazó állomások listája:")
+      
+      display_cols = [
+          'Töltőberendezés üzemeltető neve', 
+          'Töltőberendezés település megnevezése', 
+          'Töltőberendezés közterülete',
+          'Töltőberendezés által felvehető maximális teljesítmény [kW]',
+          'Csatlakozási pontok száma összesen',
+          'Type2 csatlakozó darabszáma [db]',
+          'CCS2 csatlakozó darabszáma [db]',
+          'Chademo csatlakozó darabszáma [db]'
+      ]
+      
+      existing_cols = [c for c in display_cols if c in anomalies.columns]
+      st.dataframe(anomalies[existing_cols], width = 'stretch')
+      
+      # Statisztikai bontás
+      st.subheader("📊 Kimutatás a hibatípusokról")
+      col1, col2, col3 = st.columns(3)
+      with col1:
+          st.metric("Fantom kW (Magyarbóly-típus)", f"{anomalies['Fantom_Töltő_Hiba'].sum()} db")
+      with col2:
+          st.metric("Kategória elírások", f"{anomalies['Kategória_Ellentmondás_Hiba'].sum()} db")
+      with col3:
+          st.metric("Főösszeg eltérések", f"{anomalies['Főösszeg_Eltérés_Hiba'].sum()} db")
+    else:
+      st.success("🎉 Kiváló! Az adatbázis összes adatsora matematikailag és logikailag teljesen konzisztens.")
+
+with tab5:
+  st.header("⏳ Leszerelési és Élettartam Elemzés (Survival Analysis)")
+  st.write("Ez a modul a töltőberendezések piacon eltöltött idejét és a leszerelési kockázatokat elemzi az üzembe helyezési és leszerelési dátumok alapján.")
+
+  # A teljes, szűretlen adatbázist kérjük le a load_data2() függvényből, hogy a leszerelteket is lássuk
+  RAW_DATAS = load_data2()
+
+  if RAW_DATAS.empty:
+    st.warning("A nyers adatbázis nem elérhető.")
+  else:
+    survival_df = RAW_DATAS.copy()
+    
+    # Dátumok típuskonverziója a megadott pontos oszlopnevekkel
+    survival_df["Kezdő dátum"] = pd.to_datetime(survival_df["Berendezés üzembehelyezésének dátuma"], format="mixed", errors="coerce")
+    survival_df["Berendezés leszerelésének dátuma"] = pd.to_datetime(survival_df["Berendezés leszerelésének dátuma"], format="mixed", errors="coerce")
+    
+    # Hiányzó üzembehelyezési dátumok eldobása (enélkül nem számolható élettartam)
+    survival_df = survival_df.dropna(subset=["Kezdő dátum"])
+    
+    # Esemény (Event) meghatározása: 1 = leszerelve, 0 = még üzemel (cenzúrázott adat)
+    survival_df["Még üzemel"] = (survival_df["Berendezés leszerelésének dátuma"] > datetime.now()) | (survival_df["Berendezés leszerelésének dátuma"].isna())
+    survival_df["Observed_Event"] = survival_df["Még üzemel"].apply(lambda x: 0 if x else 1)
+    
+    # Végdátum rögzítése: ha még üzemel, a mai napig számoljuk az élettartamot
+    survival_df["Vég dátum"] = survival_df["Berendezés leszerelésének dátuma"]
+    survival_df.loc[survival_df["Még üzemel"] == True, "Vég dátum"] = datetime.now()
+    
+    # Élettartam kiszámítása hónapokban
+    survival_df["Élettartam (hónap)"] = (survival_df["Vég dátum"] - survival_df["Kezdő dátum"]).dt.days / 30.44
+    
+    # Csak a pozitív, értelmes időtartamokat tartjuk meg
+    survival_df = survival_df[survival_df["Élettartam (hónap)"] > 0]
+
+    if survival_df.empty:
+      st.info("Nincs elegendő historikus dátumadat az élettartam elemzéséhez.")
+    else:
+      st.subheader("Csoportosított élettartam összehasonlítás")
+      
+      # Top 5 üzemeltető kiválasztása alapértelmezettnek a pontos oszlopnévvel
+      top_operators = survival_df["Töltőberendezés üzemeltető neve"].value_counts().head(5).index.tolist()
+      
+      selected_op = st.multiselect(
+          "Válasszon üzemeltetőket az életgörbe összehasonlításhoz (Top 5 alapértelmezett):", 
+          options=survival_df["Töltőberendezés üzemeltető neve"].unique().tolist(),
+          default=top_operators
+      )
+      
+      if not selected_op:
+        st.warning("Kérjük, válasszon ki legalább egy üzemeltetőt!")
+      else:
+        plot_data = []
+        summary_stats = []
+        
+        # Kaplan-Meier túlélési görbe kiszámítása manuálisan (Pandas alapon)
+        for op in selected_op:
+          op_df = survival_df[survival_df["Töltőberendezés üzemeltető neve"] == op].sort_values(by="Élettartam (hónap)")
+          
+          if op_df.empty:
+            continue
+            
+          total_at_risk = len(op_df)
+          survival_prob = 1.0
+          
+          timeline = [0.0]
+          probabilities = [1.0]
+          
+          # Időpontok szerinti aggregáció
+          for t, group in op_df.groupby("Élettartam (hónap)"):
+            deaths = len(group[group["Observed_Event"] == 1])
+            censored = len(group[group["Observed_Event"] == 0])
+            
+            if total_at_risk > 0:
+              survival_prob *= (1.0 - (deaths / total_at_risk))
+            
+            timeline.append(t)
+            probabilities.append(survival_prob)
+            
+            total_at_risk -= (deaths + censored)
+            
+          # Plotly formátum felépítése
+          for t, p in zip(timeline, probabilities):
+            plot_data.append({
+                "Idő (hónap)": t,
+                "Túlélési ráta (aktív maradás %)": p * 100,
+                "Üzemeltető": op
+            })
+            
+          # Medián élettartam becslése (ahol a görbe 50% alá esik)
+          median_life = "Nincs adat (>50hó)"
+          for t, p in zip(timeline, probabilities):
+            if p <= 0.5:
+              median_life = f"{t:.1f} hónap"
+              break
+              
+          summary_stats.append({
+              "Üzemeltető": op,
+              "Összes vizsgált töltő (db)": len(op_df),
+              "Ebből már leszerelt (db)": len(op_df[op_df["Observed_Event"] == 1]),
+              "Becsült medián élettartam": median_life
+          })
+          
+        # Grafikon kirajzolása, ha van adat
+        if plot_data:
+          fig_surf = px.line(
+              pd.DataFrame(plot_data), 
+              x="Idő (hónap)", 
+              y="Túlélési ráta (aktív maradás %)", 
+              color="Üzemeltető",
+              line_shape="hv", # Lépcsőzetes túlélési függvény formátum
+              title="Töltőberendezések piacon maradási görbéje (Kaplan-Meier közelítés)"
+          )
+          st.plotly_chart(fig_surf, width = 'stretch')
+          
+          # Összefoglaló statisztikai táblázat
+          st.subheader("📊 Élettartam statisztikák üzemeltetőnként")
+          st.dataframe(pd.DataFrame(summary_stats), width = 'stretch', hide_index = True)
+          
+          st.info("💡 **Hogyan olvassa a grafikont?** A függőleges tengely azt mutatja, hogy az üzembe helyezést követő X. hónapban a töltők hány százaléka üzemel még. A meredeken lefelé zuhanó vonalak korai leszerelési hullámot jeleznek az adott üzemeltetőnél.")
