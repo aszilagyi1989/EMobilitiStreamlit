@@ -426,7 +426,7 @@ with tab6:
   st.header("⚪ Földrajzi Lefedettség és Fehér Foltok Elemzése")
   st.write("Ez a modul a településszintű összesített töltési kapacitásokat (kW) vizsgálja, rávilágítva a túlreprezentált körzetekre és a töltőhálózat fehér foltjaira.")
 
-  white_DATAS = filtered_DATAS.copy() # load_data()
+  white_DATAS = filtered_Locations.copy() # filtered_DATAS.copy() # load_data()
   # A szűrők által érintett, de már megtisztított adatokat használjuk (filtered_Locations helyett filtered_DATAS-ból érdemes dolgozni, hogy a plug_mask ne zavarjon be)
   if white_DATAS.empty:
     st.warning("Nincs megjeleníthető adat a jelenlegi szűrési feltételek mellett.")
