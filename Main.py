@@ -110,7 +110,7 @@ with tab1:
     ne = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].max().tolist()
     map.fit_bounds([sw, ne])
   
-  st_folium(map, width = 'stretch', height = 600)
+  st_folium(map, width = 'stretch', height = 600, returned_objects = [], key = "töltő_térkép")
   
   sorok_szama, oszlopok_szama = DATAS.shape
   sorok_szama2, oszlopok_szama2 = filtered_Locations.shape
@@ -299,7 +299,7 @@ with tab4:
 
 with tab5:
   st.header("⏳ Leszerelési és Élettartam Elemzés (Survival Analysis)")
-  st.write("Ez a modul a töltőberendezések piacon eltöltött idejét és a leszerelési kockázatokat elemzi az üzembe helyezési és leszerelési dátumok alapján.")
+  st.write("Ez a modul a töltőberendezések piacon eltöltött idejét és a leszerelési kockázatokat elemzi az üzembe helyezési és leszerelési dátumok alapján a teljes, szűretlen adatbázisból.")
 
   # A teljes, szűretlen adatbázist kérjük le a load_data2() függvényből, hogy a leszerelteket is lássuk
   RAW_DATAS = load_data2()
