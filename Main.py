@@ -231,14 +231,17 @@ with tab4:
     )
     anomaly_df['Összes_Fizikai_Csatlakozó'] = anomaly_df['Fizikai_AC_Darabszám'] + anomaly_df['Fizikai_DC_Darabszám']
 
-    # 2. Összesítjük a részletező kategória oszlopok darabszámait
+    # 2. Összesítjük a részletező kategória oszlopok darabszámait (utolsó 7 oszlop)
+    
+    # AC kategóriák összege (Figyelj a dupla szóközre a [db] előtt!)
     anomaly_df['Kategória_AC_Darabszám'] = (
         anomaly_df['Csatlakozó darabszám: Slow AC: P <7.4 kW [db]'].fillna(0) +
         anomaly_df['Csatlakozó darabszám: Medium-speed AC: 7.4 kW ≤ P ≤ 22 kW  [db]'].fillna(0) +
         anomaly_df['Csatlakozó darabszám: Fast AC: P > 22 kW  [db]'].fillna(0)
     )
+
     anomaly_df['Kategória_DC_Darabszám'] = (
-        anomaly_df['Csatozó darabszám: Slow DC: P < 50 kW  [db]'] if 'Csatozó darabszám: Slow DC: P < 50 kW  [db]' in anomaly_df.columns else anomaly_df['Csatlakozó darabszám: Slow DC: P < 50 kW  [db]'].fillna(0) +
+        anomaly_df['Csatlakozó darabszám: Slow DC: P < 50 kW  [db]'].fillna(0) +
         anomaly_df['Csatlakozó darabszám: Fast DC: 50 kW ≤ P < 150 kW  [db]'].fillna(0) +
         anomaly_df['Csatlakozó darabszám: Level 1- Ultra fast DC: 150 kW ≤ P < 350 kW  [db]'].fillna(0) +
         anomaly_df['Csatlakozó darabszám: Level 2- Ultra fast DC: P ≥ 350 kW  [db]'].fillna(0)
