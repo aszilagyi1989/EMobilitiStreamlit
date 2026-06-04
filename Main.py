@@ -220,27 +220,19 @@ with tab4:
     anomaly_df = RAW_ANOMALY_DATA.copy()
 
     # 1. Összesítjük a fizikai darabszámokat
-    anomaly_df['Fizikai_AC_Darabszám'] = (
+    anomaly_df['Összes_Fizikai_Csatlakozó'] = (
         anomaly_df['Type2 csatlakozó darabszáma [db]'].fillna(0) + 
-        anomaly_df['Egyéb AC csatlakozó darabszáma [db]'].fillna(0)
-    )
-    anomaly_df['Fizikai_DC_Darabszám'] = (
+        anomaly_df['Egyéb AC csatlakozó darabszáma [db]'].fillna(0) +
         anomaly_df['CCS2 csatlakozó darabszáma [db]'].fillna(0) + 
         anomaly_df['Chademo csatlakozó darabszáma [db]'].fillna(0) + 
         anomaly_df['Egyéb DC csatlakozó darabszáma [db]'].fillna(0)
     )
-    anomaly_df['Összes_Fizikai_Csatlakozó'] = anomaly_df['Fizikai_AC_Darabszám'] + anomaly_df['Fizikai_DC_Darabszám']
 
-    # 2. Összesítjük a részletező kategória oszlopok darabszámait (utolsó 7 oszlop)
-    
-    # AC kategóriák összege (Figyelj a dupla szóközre a [db] előtt!)
-    anomaly_df['Kategória_AC_Darabszám'] = (
+    # 2. Összesítjük a részletező kategória oszlopok darabszámait (utolsó 7 oszlop együtt)
+    anomaly_df['Összes_Kategória_Darabszám'] = (
         anomaly_df['Csatlakozó darabszám: Slow AC: P <7.4 kW [db]'].fillna(0) +
         anomaly_df['Csatlakozó darabszám: Medium-speed AC: 7.4 kW ≤ P ≤ 22 kW  [db]'].fillna(0) +
-        anomaly_df['Csatlakozó darabszám: Fast AC: P > 22 kW  [db]'].fillna(0)
-    )
-
-    anomaly_df['Kategória_DC_Darabszám'] = (
+        anomaly_df['Csatlakozó darabszám: Fast AC: P > 22 kW  [db]'].fillna(0) +
         anomaly_df['Csatlakozó darabszám: Slow DC: P < 50 kW  [db]'].fillna(0) +
         anomaly_df['Csatlakozó darabszám: Fast DC: 50 kW ≤ P < 150 kW  [db]'].fillna(0) +
         anomaly_df['Csatlakozó darabszám: Level 1- Ultra fast DC: 150 kW ≤ P < 350 kW  [db]'].fillna(0) +
@@ -255,10 +247,9 @@ with tab4:
         (anomaly_df['Összes_Fizikai_Csatlakozó'] == 0)
     )
 
-    # B: Darabszámbeli ellentmondás hiba (A fizikai és a kategória oszlopok összege eltér)
+    # B: Darabszámbeli ellentmondás hiba (A fizikai típusok és a teljesítmény kategóriák összege eltér)
     anomaly_df['Kategória_Ellentmondás_Hiba'] = (
-        (anomaly_df['Fizikai_AC_Darabszám'] != anomaly_df['Kategória_AC_Darabszám']) | 
-        (anomaly_df['Fizikai_DC_Darabszám'] != anomaly_df['Kategória_DC_Darabszám'])
+        anomaly_df['Összes_Fizikai_Csatlakozó'] != anomaly_df['Összes_Kategória_Darabszám']
     )
 
     # C: Főösszeg hiba (A 'Csatlakozási pontok száma összesen' nem egyezik a fizikai oszlopok összegével)
@@ -298,7 +289,7 @@ with tab4:
       st.subheader("📊 Kimutatás a hibatípusokról")
       col1, col2, col3 = st.columns(3)
       with col1:
-          st.metric("Fantom kW (Magyarbóly-típus)", f"{anomalies['Fantom_Töltő_Hiba'].sum()} db")
+          st.metric("Fantom kW", f"{anomalies['Fantom_Töltő_Hiba'].sum()} db")
       with col2:
           st.metric("Kategória elírások", f"{anomalies['Kategória_Ellentmondás_Hiba'].sum()} db")
       with col3:
