@@ -8,12 +8,10 @@ from streamlit_folium import st_folium
 import plotly.express as px
 from sklearn.cluster import KMeans
 
-directory = os.path.dirname(os.path.abspath(__file__))
-
 @st.cache_data
 def fetch_raw_data():
+  directory = os.path.dirname(os.path.abspath(__file__))
   df = pd.read_csv(os.path.join(directory, "CSV", "2025_KSH__Emobiliti.csv"), sep = ";", decimal = ",")
-  # df = pd.read_csv("https://github.com/aszilagyi1989/EMobilitiStreamlit/raw/refs/heads/main/CSV/2025_KSH__Emobiliti.csv", sep = ";", decimal = ",")
   
   return df
 
