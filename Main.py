@@ -5,6 +5,7 @@ from datetime import datetime
 import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
+from streamlit_option_menu import option_menu
 import plotly.express as px
 from sklearn.cluster import KMeans
 
@@ -48,6 +49,40 @@ st.set_page_config(
   menu_items = {'Get help': 'mailto:sz.adam1989@gmail.com',
                 'Report a bug': 'mailto:sz.adam1989@gmail.com',
                 'About': 'Ez a webalkalmazás a 2607-es OSAP számú adatátvétel üzemben lévő E-töltőállomásait tartalmazza a 2025. adatév alapján.'}
+)
+
+
+selected = option_menu(
+    menu_title = None, 
+    options = ["Térkép", "Piaci Elemzés", "Klaszterezés", "Adathibák & Anomáliák", "Élettartam Elemzés", "Fehér Foltok Elemzése"],
+    icons = ['map', 'bar-chart-line', 'diagram-3', 'exclamation-triangle', 'hourglass-split', 'circle'], 
+    menu_icon = None, 
+    default_index = 0, 
+    orientation = 'horizontal', 
+    styles = {
+        "container": {
+            "padding": "0!important", 
+            "background-color": "#f0f2f6",
+            "max-width": "100%"
+        },
+        "icon": {
+            "color": "#ff4b4b", 
+            "font-size": "20px"
+        },
+        "nav-link": {
+            "font-size": "16px", 
+            "text-align": "center", 
+            "margin": "0px", 
+            "padding": "10px",
+            "--hover-color": "#dee2e6",
+            "list-style": "none"  # Explicit eltünteti a listajeleket (nyilakat)
+        },
+        "nav-link-selected": {
+            "background-color": "#003366", 
+            "color": "white",
+            "font-weight": "bold"
+        },
+    }
 )
 
 with st.sidebar:
@@ -102,9 +137,10 @@ with st.sidebar:
     filtered_Locations = pd.DataFrame(columns = filtered_DATAS.columns)
   
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Klaszterezés (Scientist)", "⚠️ Adathibák & Anomáliák", "⏳ Élettartam Elemzés", "⚪ Fehér Foltok Elemzése"])
+# tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Klaszterezés (Scientist)", "⚠️ Adathibák & Anomáliák", "⏳ Élettartam Elemzés", "⚪ Fehér Foltok Elemzése"])
 
-with tab1:
+# with tab1:
+if selected == "Térkép":
   map = folium.Map(location = [47.1625, 19.5033], zoom_start = 7)
   marker_cluster = MarkerCluster().add_to(map)
     
@@ -148,7 +184,8 @@ with tab1:
   with col2:
     st.metric(label = label2, value = f"{sorok_szama2} db")
 
-with tab2:
+# with tab2:
+if selected ==  "Piaci Elemzés":
   if not filtered_Locations.empty:
     st.subheader("Top Üzemeltetők töltőállomások száma alapján")
     operator_counts = filtered_Locations["Töltőberendezés üzemeltető neve"].value_counts().reset_index()
@@ -186,7 +223,8 @@ with tab2:
     st.warning("Nincs megjeleníthető adat a jelenlegi szűrési feltételek mellett.")
 
 
-with tab3:
+# with tab3:
+if selected == "Klaszterezés":
   st.header("🔬 Földrajzi Klaszterezés (K-Means ML Modell)")
   st.write("Ez a gépi tanulási modell a GPS koordináták alapján csoportosítja a szűrt töltőállomásokat optimalizált hálózati gócokba (hubokba).")
   if len(filtered_Locations) >= 3:
@@ -234,7 +272,8 @@ with tab3:
   else:
     st.warning("A gépi tanulási modell futtatásához legalább 3 darab töltőberendezést kell kiválasztania a szűrőkkel.")
     
-with tab4:
+# with tab4:
+if selected == "Adathibák & Anomáliák":
   st.header("⚠️ Adathibák & Anomáliák")
   st.write("Ez a modul a teljes KSH adatbázis matematikai és logikai ellentmondásait szűri ki, függetlenül az oldalsáv szűrőitől.")
 
@@ -324,7 +363,8 @@ with tab4:
     else:
       st.success("🎉 Kiváló! Az adatbázis összes adatsora matematikailag és logikailag teljesen konzisztens.")
 
-with tab5:
+# with tab5:
+if selected == "Élettartam Elemzés":
   st.header("⏳ Leszerelési és Élettartam Elemzés (Survival Analysis)")
   st.write("Ez a modul a töltőberendezések piacon eltöltött idejét és a leszerelési kockázatokat elemzi az üzembe helyezési és leszerelési dátumok alapján a teljes, szűretlen adatbázisból.")
 
@@ -443,7 +483,8 @@ with tab5:
           
           st.info("💡 **Hogyan olvassa a grafikont?** A függőleges tengely azt mutatja, hogy az üzembe helyezést követő X. hónapban a töltők hány százaléka üzemel még. A meredeken lefelé zuhanó vonalak korai leszerelési hullámot jeleznek az adott üzemeltetőnél.")
 
-with tab6:
+# with tab6:
+if selected == "Fehér Foltok Elemzése":
   st.header("⚪ Földrajzi Lefedettség és Fehér Foltok Elemzése")
   st.write("Ez a modul a településszintű összesített töltési kapacitásokat (kW) vizsgálja, rávilágítva a túlreprezentált körzetekre és a töltőhálózat fehér foltjaira.")
 
