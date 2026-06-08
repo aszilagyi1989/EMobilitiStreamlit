@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 import pandas as pd
 from datetime import datetime
 import folium
@@ -7,9 +8,18 @@ from streamlit_folium import st_folium
 import plotly.express as px
 from sklearn.cluster import KMeans
 
+directory = os.path.dirname(os.path.abspath(__file__))
+
+@st.cache_data
+def fetch_raw_data():
+  df = pd.read_csv(os.path.join(directory, "CSV", "2025_KSH__Emobiliti.csv"), sep = ";", decimal = ",")
+  # df = pd.read_csv("https://github.com/aszilagyi1989/EMobilitiStreamlit/raw/refs/heads/main/CSV/2025_KSH__Emobiliti.csv", sep = ";", decimal = ",")
+  
+  return df
+
 @st.cache_data
 def load_data():
-  df = pd.read_csv("https://github.com/aszilagyi1989/EMobilitiStreamlit/raw/refs/heads/main/CSV/2025_KSH__Emobiliti.csv", sep = ";", decimal = ",")
+  df = fetch_raw_data().copy()
   df["Berendezés leszerelésének dátuma"] = pd.to_datetime(df["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
   df = df[(df["Berendezés leszerelésének dátuma"] > datetime.now()) | (df["Berendezés leszerelésének dátuma"].isna())]
   df["IRSZ_VAROS"] = (df["Töltőberendezés irányítószáma"].astype(str) + " " + df["Töltőberendezés település megnevezése"])
@@ -18,13 +28,20 @@ def load_data():
 
 @st.cache_data
 def load_data2():
-  df = pd.read_csv("https://github.com/aszilagyi1989/EMobilitiStreamlit/raw/refs/heads/main/CSV/2025_KSH__Emobiliti.csv", sep = ";", decimal = ",")
+  df = fetch_raw_data().copy()
   df["Berendezés leszerelésének dátuma"] = pd.to_datetime(df["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
   df["IRSZ_VAROS"] = (df["Töltőberendezés irányítószáma"].astype(str) + " " + df["Töltőberendezés település megnevezése"])
 
   return df
 
-DATAS = load_data()
+@st.cache_data
+def load_megszunt_data():
+  df = fetch_raw_data().copy()
+  df["Berendezés leszerelésének dátuma"] = pd.to_datetime(df["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
+  df = df[(df["Berendezés leszerelésének dátuma"] < datetime.now())]
+  df["IRSZ_VAROS"] = (df["Töltőberendezés irányítószáma"].astype(str) + " " + df["Töltőberendezés település megnevezése"])
+
+  return df
 
 st.set_page_config(
   layout = "wide",
@@ -36,6 +53,18 @@ st.set_page_config(
 )
 
 with st.sidebar:
+  work = st.checkbox("Az üzemelők helyett a már leszerelt töltőberendezések mutatása")
+  if work:
+    DATAS = load_megszunt_data()
+    default_value = "1011 Budapest"
+    label1 = "Összes leszerelt töltőberendezés"
+    label2 = "Térképen mutatot leszerelt töltőberendezés"
+  else:
+    DATAS = load_data()
+    default_value = "1007 Budapest"
+    label1 = "Összes regisztrált üzemben lévő töltőberendezés"
+    label2 = "Térképen mutatot üzemben lévő töltőberendezés"
+  
   full_City = st.checkbox("Csak településnevek (irányítószám nélkül)")
   if full_City:
     Cities_All = sorted(DATAS["Töltőberendezés település megnevezése"].unique().tolist())
@@ -43,7 +72,7 @@ with st.sidebar:
     filtered_DATAS = DATAS[DATAS["Töltőberendezés település megnevezése"].isin(City)]
   else:
     Cities_All = sorted(DATAS["IRSZ_VAROS"].unique().tolist())
-    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, "1007 Budapest")
+    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, default_value)
     filtered_DATAS = DATAS[DATAS["IRSZ_VAROS"].isin(City)]
   
   Names_All = sorted(filtered_DATAS["Töltőberendezés üzemeltető neve"].unique().tolist())
@@ -116,10 +145,10 @@ with tab1:
   sorok_szama2, oszlopok_szama2 = filtered_Locations.shape
   col1, col2 = st.columns(2)
   with col1:
-    st.metric(label = "Összes regisztrált üzemben lévő töltőberendezés", value = f"{sorok_szama} db")
+    st.metric(label = label1, value = f"{sorok_szama} db")
   
   with col2:
-    st.metric(label = "Térképen mutatot üzemben lévő töltőberendezés", value = f"{sorok_szama2} db")
+    st.metric(label = label2, value = f"{sorok_szama2} db")
 
 with tab2:
   if not filtered_Locations.empty:
@@ -209,7 +238,7 @@ with tab3:
     
 with tab4:
   st.header("⚠️ Adathibák & Anomáliák")
-  st.write("Ez a modul a teljes KSH adatbázis matematikai és logikai ellentmondásait szűri ki, függetlenül a sidebar szűrőitől.")
+  st.write("Ez a modul a teljes KSH adatbázis matematikai és logikai ellentmondásait szűri ki, függetlenül az oldalsáv szűrőitől.")
 
   # JAVÍTÁS: A szűretlen nyers adatbázisból indulunk ki, hogy a sidebar ne rejtse el a hibákat!
   RAW_ANOMALY_DATA = load_data()

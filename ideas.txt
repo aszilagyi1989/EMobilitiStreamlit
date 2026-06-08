@@ -59,3 +59,25 @@ töltőberendezés átlagos "élettartamát" a piacon.
 Külön kérdés:
 Szeretné-e a megyei szintű csoportosítást is behozni az irányítószámok 
 első számjegyei alapján?
+
+
+from streamlit_option_menu import option_menu
+
+# Menü létrehozása
+selected = option_menu(
+    menu_title=None, 
+    options=["Térkép", "Piaci Elemzés", "Klaszterezés", "Adathibák", "Élettartam", "Fehér Foltok"],
+    icons=["map", "bar-chart", "microscope", "exclamation-triangle", "hourglass-split", "circle"], # Bootstrap ikonok
+    menu_icon="cast", 
+    default_index=0, 
+    orientation="horizontal",
+)
+
+if selected == "Térkép":
+    # A nehéz térkép kódja CSAK AKKOR fut le, ha ide kattintasz.
+    # Ha átváltasz másra, a böngésző felszabadítja ezt a memóriát.
+    render_map(filtered_Locations) 
+
+elif selected == "Adathibák":
+    # Itt a térkép nem is létezik a háttérben, így nem tudja lefagyasztani az oldalt.
+    show_anomalies(DATAS)
