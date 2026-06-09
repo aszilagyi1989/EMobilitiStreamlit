@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from datetime import datetime
 import folium
-from folium.plugins import MarkerCluster
+from folium.plugins import FastMarkerCluster
 from streamlit_folium import st_folium
 from streamlit_option_menu import option_menu
 import plotly.express as px
@@ -54,7 +54,7 @@ st.set_page_config(
 
 selected = option_menu(
     menu_title = None, 
-    options = ["Térkép", "Piaci Elemzés", "Klaszterezés", "Adathibák & Anomáliák", "Élettartam Elemzés", "Fehér Foltok Elemzése"],
+    options = ["Térkép", "Piaci Elemzés", "Klaszterezés", "Anomáliák", "Élettartam", "Fehér Foltok"],
     icons = ['map', 'bar-chart-line', 'diagram-3', 'exclamation-triangle', 'hourglass-split', 'circle'], 
     menu_icon = None, 
     default_index = 0, 
@@ -139,34 +139,42 @@ with st.sidebar:
 
 # tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Klaszterezés (Scientist)", "⚠️ Adathibák & Anomáliák", "⏳ Élettartam Elemzés", "⚪ Fehér Foltok Elemzése"])
 
-# with tab1:
 if selected == "Térkép":
-  map = folium.Map(location = [47.1625, 19.5033], zoom_start = 7)
-  marker_cluster = MarkerCluster().add_to(map)
+  map = folium.Map(location = [47.1625, 19.5033], zoom_start = 7, control_scale = True)
+  callback_data = []
     
   for index, row in filtered_Locations.iterrows():
     message = ""
     if selected_plugs:
       if "Type2" in selected_plugs and row['Type2 csatlakozó darabszáma [db]'] != 0:
-        message += f"<br>Type2 teljesítmény, darabszám: {row['Type2 csatlakozó teljesítménye [kW, per darab]'] / row['Type2 csatlakozó darabszáma [db]']:.0f} kw, {row['Type2 csatlakozó darabszáma [db]']} db"
+        message += f"<br>Type2 csatl.: {row['Type2 csatlakozó teljesítménye [kW, per darab]'] / row['Type2 csatlakozó darabszáma [db]']:.0f} kw és {row['Type2 csatlakozó darabszáma [db]']} db"
       
       if "Egyéb AC" in selected_plugs and row['Egyéb AC csatlakozó darabszáma [db]'] != 0:
-        message += f"<br>Egyéb AC teljesítmény, darabszám: {row['Egyéb AC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb AC csatlakozó darabszáma [db]']:.0f} kw, {row['Egyéb AC csatlakozó darabszáma [db]']} db"
+        message += f"<br>Egyéb AC csatl.: {row['Egyéb AC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb AC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb AC csatlakozó darabszáma [db]']} db"
       
       if "CCS2" in selected_plugs and row['CCS2 csatlakozó darabszáma [db]'] != 0:
-        message += f"<br>CCS2 teljesítmény, darabszám: {row['CCS2 csatlakozó teljesítménye [kW, per darab]'] / row['CCS2 csatlakozó darabszáma [db]']:.0f} kw, {row['CCS2 csatlakozó darabszáma [db]']} db"
+        message += f"<br>CCS2 csatl.: {row['CCS2 csatlakozó teljesítménye [kW, per darab]'] / row['CCS2 csatlakozó darabszáma [db]']:.0f} kw és {row['CCS2 csatlakozó darabszáma [db]']} db"
           
       if "Chademo" in selected_plugs and row['Chademo csatlakozó darabszáma [db]'] != 0:
-        message += f"<br>Chademo teljesítmény, darabszám: {row['Chademo csatlakozó teljesítménye [kW, per darab]'] / row['Chademo csatlakozó darabszáma [db]']:.0f} kw, {row['Chademo csatlakozó darabszáma [db]']} db"
+        message += f"<br>Chademo csatl.: {row['Chademo csatlakozó teljesítménye [kW, per darab]'] / row['Chademo csatlakozó darabszáma [db]']:.0f} kw és {row['Chademo csatlakozó darabszáma [db]']} db"
           
       if "Egyéb DC" in selected_plugs and row['Egyéb DC csatlakozó darabszáma [db]'] != 0:
-        message += f"<br>Egyéb DC teljesítmény és darabszám: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw, és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
-      
-    folium.Marker(
-      location = [row["Töltőberendezés GPSKoordiN"], row["Töltőberendezés GPSKoordiE"]],
-      popup = f"Üzemeltető: {row['Töltőberendezés üzemeltető neve']}<br>Cím: {(row['IRSZ_VAROS'] + ", " + row['Töltőberendezés közterülete'])} {message}"
-    ).add_to(marker_cluster)
-  
+        message += f"<br>Egyéb DC csatl.: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
+    
+    popup_text = f"Üzemeltető: {row['Töltőberendezés üzemeltető neve']}<br>Cím: {(row['IRSZ_VAROS'] + ', ' + row['Töltőberendezés közterülete'])} {message}"
+    callback_data.append([row["Töltőberendezés GPSKoordiN"], row["Töltőberendezés GPSKoordiE"], popup_text])
+
+  # EZ A RÉSZ HIÁNYZOTT: JavaScript kód, ami megjeleníti a popupot
+  callback = """
+    function (row) {
+        var marker = L.marker(new L.LatLng(row[0], row[1]));
+        marker.bindPopup(row[2]);
+        return marker;
+    };
+  """
+
+  # Itt adjuk át a callback-et
+  FastMarkerCluster(data=callback_data, callback=callback).add_to(map)
   
   if not filtered_Locations.empty:
     sw = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].min().tolist()
@@ -184,7 +192,6 @@ if selected == "Térkép":
   with col2:
     st.metric(label = label2, value = f"{sorok_szama2} db")
 
-# with tab2:
 if selected ==  "Piaci Elemzés":
   if not filtered_Locations.empty:
     st.subheader("Top Üzemeltetők töltőállomások száma alapján")
@@ -222,8 +229,6 @@ if selected ==  "Piaci Elemzés":
   else:
     st.warning("Nincs megjeleníthető adat a jelenlegi szűrési feltételek mellett.")
 
-
-# with tab3:
 if selected == "Klaszterezés":
   st.header("🔬 Földrajzi Klaszterezés (K-Means ML Modell)")
   st.write("Ez a gépi tanulási modell a GPS koordináták alapján csoportosítja a szűrt töltőállomásokat optimalizált hálózati gócokba (hubokba).")
@@ -272,8 +277,7 @@ if selected == "Klaszterezés":
   else:
     st.warning("A gépi tanulási modell futtatásához legalább 3 darab töltőberendezést kell kiválasztania a szűrőkkel.")
     
-# with tab4:
-if selected == "Adathibák & Anomáliák":
+if selected == "Anomáliák":
   st.header("⚠️ Adathibák & Anomáliák")
   st.write("Ez a modul a teljes KSH adatbázis matematikai és logikai ellentmondásait szűri ki, függetlenül az oldalsáv szűrőitől.")
 
@@ -363,8 +367,7 @@ if selected == "Adathibák & Anomáliák":
     else:
       st.success("🎉 Kiváló! Az adatbázis összes adatsora matematikailag és logikailag teljesen konzisztens.")
 
-# with tab5:
-if selected == "Élettartam Elemzés":
+if selected == "Élettartam":
   st.header("⏳ Leszerelési és Élettartam Elemzés (Survival Analysis)")
   st.write("Ez a modul a töltőberendezések piacon eltöltött idejét és a leszerelési kockázatokat elemzi az üzembe helyezési és leszerelési dátumok alapján a teljes, szűretlen adatbázisból.")
 
@@ -483,8 +486,7 @@ if selected == "Élettartam Elemzés":
           
           st.info("💡 **Hogyan olvassa a grafikont?** A függőleges tengely azt mutatja, hogy az üzembe helyezést követő X. hónapban a töltők hány százaléka üzemel még. A meredeken lefelé zuhanó vonalak korai leszerelési hullámot jeleznek az adott üzemeltetőnél.")
 
-# with tab6:
-if selected == "Fehér Foltok Elemzése":
+if selected == "Fehér Foltok":
   st.header("⚪ Földrajzi Lefedettség és Fehér Foltok Elemzése")
   st.write("Ez a modul a településszintű összesített töltési kapacitásokat (kW) vizsgálja, rávilágítva a túlreprezentált körzetekre és a töltőhálózat fehér foltjaira.")
 
