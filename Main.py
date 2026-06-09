@@ -136,6 +136,7 @@ with st.sidebar:
   else:
     filtered_Locations = pd.DataFrame(columns = filtered_DATAS.columns)
   
+  coordinates = st.checkbox("Javított koordinátákkal")
 
 # tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Klaszterezés (Scientist)", "⚠️ Adathibák & Anomáliák", "⏳ Élettartam Elemzés", "⚪ Fehér Foltok Elemzése"])
 
@@ -165,7 +166,10 @@ if selected == "Térkép":
         message += f"<br>Egyéb DC csatl.: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
     
     popup_text = f"Üzemeltető: {row['Töltőberendezés üzemeltető neve']}<br>Cím: {(row['IRSZ_VAROS'] + ', ' + row['Töltőberendezés közterülete'])} {message}"
-    callback_data.append([row["Töltőberendezés GPSKoordiN"], row["Töltőberendezés GPSKoordiE"], popup_text])
+    if coordinates:
+      callback_data.append([row["lat"], row["long"], popup_text])
+    else:
+      callback_data.append([row["Töltőberendezés GPSKoordiN"], row["Töltőberendezés GPSKoordiE"], popup_text])
 
   callback = """
     function (row) {
@@ -179,8 +183,12 @@ if selected == "Térkép":
   FastMarkerCluster(data = callback_data, callback=callback).add_to(map)
   
   if not filtered_Locations.empty:
-    sw = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].min().tolist()
-    ne = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].max().tolist()
+    if coordinates:
+      sw = filtered_Locations[['lat', 'long']].min().tolist()
+      ne = filtered_Locations[['lat', 'long']].max().tolist()
+    else:
+      sw = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].min().tolist()
+      ne = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].max().tolist()
     map.fit_bounds([sw, ne])
   
   st_folium(map, width = 'stretch', height = 600, returned_objects = [], key = "töltő_térkép")
