@@ -244,7 +244,14 @@ if selected == "Klaszterezés":
   st.write("Ez a gépi tanulási modell a GPS koordináták alapján csoportosítja a szűrt töltőállomásokat optimalizált hálózati gócokba (hubokba).")
   if len(filtered_Locations) >= 3:
     # 1. Felkészítjük a koordináta adatokat a modell számára
-    X = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']]
+    if coordinates:
+      X = filtered_Locations[['lat', 'long']]
+      lat_Name = "lat"
+      long_Name = "long"
+    else:
+      X = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']]
+      lat_Name = "Töltőberendezés GPSKoordiN"
+      long_Name = "Töltőberendezés GPSKoordiE"
     
     # Csúszka a klaszterek (csoportok) számának dinamikus beállításához
     num_clusters = st.slider("Klaszterek (Hálózati gócok) száma:", min_value = 2, max_value = min(10, len(filtered_Locations)), value = 3)
@@ -259,8 +266,8 @@ if selected == "Klaszterezés":
     # 3. Megjelenítés egy interaktív Plotly térképen
     fig_ml = px.scatter_map(
       filtered_Locations,
-      lat = "Töltőberendezés GPSKoordiN",
-      lon = "Töltőberendezés GPSKoordiE",
+      lat = lat_Name, # "Töltőberendezés GPSKoordiN",
+      lon = long_Name, # "Töltőberendezés GPSKoordiE",
       color = filtered_Locations['Klaszter_ID'].astype(str),
       hover_name = "Töltőberendezés üzemeltető neve",
       hover_data = ["IRSZ_VAROS"],
