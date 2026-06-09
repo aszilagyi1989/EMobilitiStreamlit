@@ -147,38 +147,23 @@ if selected == "Térkép":
     message = ""
     if work:
       message += f"<br>Leszerelés dátuma: {str(row['Berendezés leszerelésének dátuma'])[:10]}"
-      if selected_plugs:
-        if "Type2" in selected_plugs and row['Type2 csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Type2 csatl.: {row['Type2 csatlakozó teljesítménye [kW, per darab]'] / row['Type2 csatlakozó darabszáma [db]']:.0f} kw és {row['Type2 csatlakozó darabszáma [db]']} db"
+      
+    if selected_plugs:
+      if "Type2" in selected_plugs and row['Type2 csatlakozó darabszáma [db]'] != 0:
+        message += f"<br>Type2 csatl.: {row['Type2 csatlakozó teljesítménye [kW, per darab]'] / row['Type2 csatlakozó darabszáma [db]']:.0f} kw és {row['Type2 csatlakozó darabszáma [db]']} db"
           
-        if "Egyéb AC" in selected_plugs and row['Egyéb AC csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Egyéb AC csatl.: {row['Egyéb AC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb AC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb AC csatlakozó darabszáma [db]']} db"
+      if "Egyéb AC" in selected_plugs and row['Egyéb AC csatlakozó darabszáma [db]'] != 0:
+        message += f"<br>Egyéb AC csatl.: {row['Egyéb AC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb AC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb AC csatlakozó darabszáma [db]']} db"
           
-        if "CCS2" in selected_plugs and row['CCS2 csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>CCS2 csatl.: {row['CCS2 csatlakozó teljesítménye [kW, per darab]'] / row['CCS2 csatlakozó darabszáma [db]']:.0f} kw és {row['CCS2 csatlakozó darabszáma [db]']} db"
+      if "CCS2" in selected_plugs and row['CCS2 csatlakozó darabszáma [db]'] != 0:
+        message += f"<br>CCS2 csatl.: {row['CCS2 csatlakozó teljesítménye [kW, per darab]'] / row['CCS2 csatlakozó darabszáma [db]']:.0f} kw és {row['CCS2 csatlakozó darabszáma [db]']} db"
               
-        if "Chademo" in selected_plugs and row['Chademo csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Chademo csatl.: {row['Chademo csatlakozó teljesítménye [kW, per darab]'] / row['Chademo csatlakozó darabszáma [db]']:.0f} kw és {row['Chademo csatlakozó darabszáma [db]']} db"
+      if "Chademo" in selected_plugs and row['Chademo csatlakozó darabszáma [db]'] != 0:
+        message += f"<br>Chademo csatl.: {row['Chademo csatlakozó teljesítménye [kW, per darab]'] / row['Chademo csatlakozó darabszáma [db]']:.0f} kw és {row['Chademo csatlakozó darabszáma [db]']} db"
               
-        if "Egyéb DC" in selected_plugs and row['Egyéb DC csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Egyéb DC csatl.: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
-    else:
-      if selected_plugs:
-        if "Type2" in selected_plugs and row['Type2 csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Type2 csatl.: {row['Type2 csatlakozó teljesítménye [kW, per darab]'] / row['Type2 csatlakozó darabszáma [db]']:.0f} kw és {row['Type2 csatlakozó darabszáma [db]']} db"
-          
-        if "Egyéb AC" in selected_plugs and row['Egyéb AC csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Egyéb AC csatl.: {row['Egyéb AC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb AC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb AC csatlakozó darabszáma [db]']} db"
-          
-        if "CCS2" in selected_plugs and row['CCS2 csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>CCS2 csatl.: {row['CCS2 csatlakozó teljesítménye [kW, per darab]'] / row['CCS2 csatlakozó darabszáma [db]']:.0f} kw és {row['CCS2 csatlakozó darabszáma [db]']} db"
-              
-        if "Chademo" in selected_plugs and row['Chademo csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Chademo csatl.: {row['Chademo csatlakozó teljesítménye [kW, per darab]'] / row['Chademo csatlakozó darabszáma [db]']:.0f} kw és {row['Chademo csatlakozó darabszáma [db]']} db"
-              
-        if "Egyéb DC" in selected_plugs and row['Egyéb DC csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Egyéb DC csatl.: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
-        
+      if "Egyéb DC" in selected_plugs and row['Egyéb DC csatlakozó darabszáma [db]'] != 0:
+        message += f"<br>Egyéb DC csatl.: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
+    
     popup_text = f"Üzemeltető: {row['Töltőberendezés üzemeltető neve']}<br>Cím: {(row['IRSZ_VAROS'] + ', ' + row['Töltőberendezés közterülete'])} {message}"
     callback_data.append([row["Töltőberendezés GPSKoordiN"], row["Töltőberendezés GPSKoordiE"], popup_text])
 
