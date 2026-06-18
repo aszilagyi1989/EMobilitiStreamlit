@@ -86,30 +86,62 @@ selected = option_menu(
 )
 
 with st.sidebar:
-  work = st.checkbox("Az üzemelők helyett a már leszerelt töltőberendezések mutatása")
-  if work:
-    DATAS = load_megszunt_data()
-    default_value = "1011 Budapest"
-    label1 = "Összes leszerelt töltőberendezés"
-    label2 = "Térképen mutatot leszerelt töltőberendezés"
-  else:
-    DATAS = load_data()
+  selected_year = st.selectbox(
+    "Adatidőszak kiválasztása",
+    options = ["Aktuális adatok", "2025.12.31", "2024.12.31", "2023.12.31", "2022.12.31", "2021.12.31", "2020.12.31", "2019.12.31", "2018.12.31", "2017.12.31", "2016.12.31", "2015.12.31", "2014.12.31", "2013.12.31", "2012.12.31", "2011.12.31", "2010.12.31"]
+  )
+  
+  if selected_year != "Aktuális adatok":
+    # Ha a felhasználó egy konkrét év végét választja ki
+    RAW_DATAS = load_data2()
+    RAW_DATAS["Berendezés üzembehelyezésének dátuma"] = pd.to_datetime(RAW_DATAS["Berendezés üzembehelyezésének dátuma"], format = "mixed", errors = "coerce")
+    RAW_DATAS["Berendezés leszerelésének dátuma"] = pd.to_datetime(RAW_DATAS["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
+    
+    # Kivágjuk az évszámot a szövegből (pl. "2025.12.31" -> 2025) és felépítjük a datetime objektumot
+    year_int = int(selected_year.split(".")[0])
+    hatarido = pd.Timestamp(datetime(year_int, 12, 31))
+    
+    # A szűrésnél MIND KÉT feltétel ugyanazt a dinamikus határidőt használja
+    DATAS = RAW_DATAS[
+      (RAW_DATAS["Berendezés üzembehelyezésének dátuma"] <= hatarido) & 
+      ((RAW_DATAS["Berendezés leszerelésének dátuma"] >= hatarido) | (RAW_DATAS["Berendezés leszerelésének dátuma"].isna()))
+    ]
+    
     default_value = "1007 Budapest"
-    label1 = "Összes regisztrált üzemben lévő töltőberendezés"
-    label2 = "Térképen mutatot üzemben lévő töltőberendezés"
+    label1 = f"{year_int}. december 31-én üzemelő töltők"
+    label2 = f"Térképen mutatott {year_int}-es töltők"
+    
+  else:
+    work = st.checkbox("Az üzemelők helyett a már leszerelt töltőberendezések mutatása")
+    if work:
+      DATAS = load_megszunt_data()
+      default_value = "1011 Budapest"
+      label1 = "Összes leszerelt töltőberendezés"
+      label2 = "Térképen mutatot leszerelt töltőberendezés"
+    else:
+      DATAS = load_data()
+      default_value = "1007 Budapest"
+      label1 = "Összes regisztrált üzemben lévő töltőberendezés"
+      label2 = "Térképen mutatot üzemben lévő töltőberendezés"
   
   full_City = st.checkbox("Csak településnevek (irányítószám nélkül)")
   if full_City:
     Cities_All = sorted(DATAS["Töltőberendezés település megnevezése"].unique().tolist())
-    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, "Budapest")
+    # default_city = "Budapest" if "Budapest" in Cities_All else (Cities_All[0] if Cities_All else [])
+    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, Cities_All) #  default_city
     filtered_DATAS = DATAS[DATAS["Töltőberendezés település megnevezése"].isin(City)]
   else:
     Cities_All = sorted(DATAS["IRSZ_VAROS"].unique().tolist())
-    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, default_value)
+    # if default_value in Cities_All:
+    #   safe_default = default_value
+    # else:
+    # bp_options = [c for c in Cities_All if "Budapest" in c]
+    # safe_default = bp_options[0] if bp_options else (Cities_All[0] if Cities_All else [])
+    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, Cities_All) # safe_default
     filtered_DATAS = DATAS[DATAS["IRSZ_VAROS"].isin(City)]
   
   Names_All = sorted(filtered_DATAS["Töltőberendezés üzemeltető neve"].unique().tolist())
-  Name = st.multiselect("Töltőberendezés üzemeltető neve", Names_All)
+  Name = st.multiselect("Töltőberendezés üzemeltető neve", Names_All, Names_All)
   filtered_DATAS = filtered_DATAS[filtered_DATAS["Töltőberendezés üzemeltető neve"].isin(Name)]
   
   selected_plugs = st.pills("Csatlakozó típusa", options = ["Type2", "Egyéb AC", "CCS2", "Chademo", "Egyéb DC"], default = ["Type2", "Egyéb AC", "CCS2", "Chademo", "Egyéb DC"], selection_mode = "multi")
@@ -146,8 +178,10 @@ if selected == "Térkép":
     
   for index, row in filtered_Locations.iterrows():
     message = ""
-    if work:
-      message += f"<br>Leszerelés dátuma: {str(row['Berendezés leszerelésének dátuma'])[:10]}"
+    # if selected_year == "Aktuális adatok":
+      # if work:
+    message += f"<br>Üzembehelyezés dátuma: {str(row['Berendezés üzembehelyezésének dátuma'])[:10]}"
+    message += f"<br>Leszerelés dátuma: {str(row['Berendezés leszerelésének dátuma'])[:10]}"
       
     if selected_plugs:
       if "Type2" in selected_plugs and row['Type2 csatlakozó darabszáma [db]'] != 0:
@@ -201,6 +235,8 @@ if selected == "Térkép":
   
   with col2:
     st.metric(label = label2, value = f"{sorok_szama2} db")
+    
+  
 
 if selected ==  "Piaci Elemzés":
   if not filtered_Locations.empty:
