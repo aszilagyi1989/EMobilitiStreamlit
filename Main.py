@@ -127,24 +127,17 @@ with st.sidebar:
   full_City = st.checkbox("Csak településnevek (irányítószám nélkül)")
   if full_City:
     Cities_All = sorted(DATAS["Töltőberendezés település megnevezése"].unique().tolist())
-    # default_city = "Budapest" if "Budapest" in Cities_All else (Cities_All[0] if Cities_All else [])
-    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, Cities_All) #  default_city
+    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, Cities_All)
     filtered_DATAS = DATAS[DATAS["Töltőberendezés település megnevezése"].isin(City)]
   else:
     Cities_All = sorted(DATAS["IRSZ_VAROS"].unique().tolist())
-    # if default_value in Cities_All:
-    #   safe_default = default_value
-    # else:
-    # bp_options = [c for c in Cities_All if "Budapest" in c]
-    # safe_default = bp_options[0] if bp_options else (Cities_All[0] if Cities_All else [])
-    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, Cities_All) # safe_default
+    City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, Cities_All)
     filtered_DATAS = DATAS[DATAS["IRSZ_VAROS"].isin(City)]
   
   Names_All = sorted(filtered_DATAS["Töltőberendezés üzemeltető neve"].unique().tolist())
   Name = st.multiselect("Töltőberendezés üzemeltető neve", Names_All, Names_All)
   filtered_DATAS = filtered_DATAS[filtered_DATAS["Töltőberendezés üzemeltető neve"].isin(Name)]
   
-  # selected_plugs = st.pills("Csatlakozó típusa", options = ["Type2", "Egyéb AC", "CCS2", "Chademo", "Egyéb DC"], default = ["Type2", "Egyéb AC", "CCS2", "Chademo", "Egyéb DC"], selection_mode = "multi")
   Types_All = sorted(filtered_DATAS["DQEA030"].fillna("Nincs megadva").unique().tolist())
   selected_plugs = st.selectbox("Csatlakozó típusa", Types_All, index = None, placeholder = "Válassz csatlakozótípust!")
   
@@ -155,28 +148,6 @@ with st.sidebar:
       filtered_Locations = filtered_DATAS[(filtered_DATAS["DQEA030"] == selected_plugs)]
   else:
     filtered_Locations = filtered_DATAS.copy()
-  
-  # plug_mask = pd.Series(False, index = filtered_DATAS.index)
-  # 
-  # if selected_plugs:
-  #   if "Type2" in selected_plugs:
-  #       plug_mask = plug_mask | (filtered_DATAS["Type2 csatlakozó teljesítménye [kW, per darab]"] > 0)
-  #   
-  #   if "Egyéb AC" in selected_plugs:
-  #       plug_mask = plug_mask | (filtered_DATAS["Egyéb AC csatlakozó teljesítménye [kW, per darab]"] > 0)
-  #   
-  #   if "CCS2" in selected_plugs:
-  #       plug_mask = plug_mask | (filtered_DATAS["CCS2 csatlakozó teljesítménye [kW, per darab]"] > 0)
-  #       
-  #   if "Chademo" in selected_plugs:
-  #       plug_mask = plug_mask | (filtered_DATAS["Chademo csatlakozó teljesítménye [kW, per darab]"] > 0)
-  #       
-  #   if "Egyéb DC" in selected_plugs:
-  #       plug_mask = plug_mask | (filtered_DATAS["Egyéb DC csatlakozó teljesítménye [kW, per darab]"] > 0)
-  # 
-  #   filtered_Locations = filtered_DATAS[plug_mask]
-  # else:
-  #   filtered_Locations = pd.DataFrame(columns = filtered_DATAS.columns)
   
   coordinates = st.checkbox("Javított koordinátákkal")
 
@@ -227,22 +198,6 @@ if selected == "Térkép":
         if row['Egyéb DC csatlakozó darabszáma [db]'] != 0:
           message += f"<br>Egyéb DC csatl.: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
       
-    # if selected_plugs:
-    #   if "Type2" in selected_plugs and row['Type2 csatlakozó darabszáma [db]'] != 0:
-    #     message += f"<br>Type2 csatl.: {row['Type2 csatlakozó teljesítménye [kW, per darab]'] / row['Type2 csatlakozó darabszáma [db]']:.0f} kw és {row['Type2 csatlakozó darabszáma [db]']} db"
-    #       
-    #   if "Egyéb AC" in selected_plugs and row['Egyéb AC csatlakozó darabszáma [db]'] != 0:
-    #     message += f"<br>Egyéb AC csatl.: {row['Egyéb AC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb AC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb AC csatlakozó darabszáma [db]']} db"
-    #       
-    #   if "CCS2" in selected_plugs and row['CCS2 csatlakozó darabszáma [db]'] != 0:
-    #     message += f"<br>CCS2 csatl.: {row['CCS2 csatlakozó teljesítménye [kW, per darab]'] / row['CCS2 csatlakozó darabszáma [db]']:.0f} kw és {row['CCS2 csatlakozó darabszáma [db]']} db"
-    #           
-    #   if "Chademo" in selected_plugs and row['Chademo csatlakozó darabszáma [db]'] != 0:
-    #     message += f"<br>Chademo csatl.: {row['Chademo csatlakozó teljesítménye [kW, per darab]'] / row['Chademo csatlakozó darabszáma [db]']:.0f} kw és {row['Chademo csatlakozó darabszáma [db]']} db"
-    #           
-    #   if "Egyéb DC" in selected_plugs and row['Egyéb DC csatlakozó darabszáma [db]'] != 0:
-    #     message += f"<br>Egyéb DC csatl.: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
-    # 
     popup_text = f"Üzemeltető: {row['Töltőberendezés üzemeltető neve']}<br>Cím: {(row['IRSZ_VAROS'] + ', ' + row['Töltőberendezés közterülete'])} {message}"
     if coordinates:
       callback_data.append([row["lat"], row["long"], popup_text])
@@ -379,7 +334,7 @@ if selected == "Anomáliák":
   st.write("Ez a modul a teljes KSH adatbázis matematikai és logikai ellentmondásait szűri ki, függetlenül az oldalsáv szűrőitől.")
 
   # JAVÍTÁS: A szűretlen nyers adatbázisból indulunk ki, hogy a sidebar ne rejtse el a hibákat!
-  RAW_ANOMALY_DATA = load_data()
+  RAW_ANOMALY_DATA = load_data2()
 
   if RAW_ANOMALY_DATA.empty:
     st.warning("A nyers adatbázis nem elérhető.")
@@ -445,8 +400,17 @@ if selected == "Anomáliák":
           'Töltőberendezés által felvehető maximális teljesítmény [kW]',
           'Csatlakozási pontok száma összesen',
           'Type2 csatlakozó darabszáma [db]',
+          'Egyéb AC csatlakozó darabszáma [db]', 
           'CCS2 csatlakozó darabszáma [db]',
-          'Chademo csatlakozó darabszáma [db]'
+          'Chademo csatlakozó darabszáma [db]',
+          'Egyéb DC csatlakozó darabszáma [db]',
+          'Csatlakozó darabszám: Slow AC: P <7.4 kW [db]',
+          'Csatlakozó darabszám: Medium-speed AC: 7.4 kW ≤ P ≤ 22 kW  [db]',
+          'Csatlakozó darabszám: Fast AC: P > 22 kW  [db]', 
+          'Csatlakozó darabszám: Slow DC: P < 50 kW  [db]',
+          'Csatlakozó darabszám: Fast DC: 50 kW ≤ P < 150 kW  [db]',
+          'Csatlakozó darabszám: Level 1- Ultra fast DC: 150 kW ≤ P < 350 kW  [db]',
+          'Csatlakozó darabszám: Level 2- Ultra fast DC: P ≥ 350 kW  [db]'
       ]
       
       existing_cols = [c for c in display_cols if c in anomalies.columns]
