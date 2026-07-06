@@ -12,7 +12,7 @@ from sklearn.cluster import KMeans
 @st.cache_data
 def fetch_raw_data():
   directory = os.path.dirname(os.path.abspath(__file__))
-  df = pd.read_csv(os.path.join(directory, "CSV", "2025_KSH__Emobiliti.csv"), sep = ";", decimal = ",")
+  df = pd.read_csv(os.path.join(directory, "CSV", "2025_KSH__Emobiliti_v2.csv"), sep = ";", decimal = ",")
   
   return df
 
