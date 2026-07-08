@@ -102,16 +102,6 @@ with st.sidebar:
     RAW_DATAS["Berendezés üzembehelyezésének dátuma"] = pd.to_datetime(RAW_DATAS["Berendezés üzembehelyezésének dátuma"], format = "mixed", errors = "coerce")
     RAW_DATAS["Berendezés leszerelésének dátuma"] = pd.to_datetime(RAW_DATAS["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
     
-    # 2. INTELIGENS JAVÍTÁS: Minden olyan gépet elkapunk, aminek az évszáma 1000 alatti (pl. 222), 
-    # VAGY a formátumhiba miatt NaT (hiányzó) lett, de tudjuk, hogy még nincs leszerelve.
-    gyanus_szurese = (
-      (RAW_DATAS["Berendezés üzembehelyezésének dátuma"].dt.year < 1000) | 
-      (RAW_DATAS["Berendezés üzembehelyezésének dátuma"].isna())
-    ) & (RAW_DATAS["Berendezés leszerelésének dátuma"].isna())
-  
-    # Ezeknek a gyanús gépeknek beállítjuk a javított 2022-es dátumot
-    RAW_DATAS.loc[gyanus_szurese, "Berendezés üzembehelyezésének dátuma"] = pd.Timestamp("2022-02-26")
-    
     # Kivágjuk az évszámot a szövegből (pl. "2025.12.31" -> 2025) és felépítjük a datetime objektumot
     year_int = int(selected_year.split(".")[0])
     hatarido = pd.Timestamp(datetime(year_int, 12, 31))
