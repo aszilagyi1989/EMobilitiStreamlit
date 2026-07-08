@@ -1,0 +1,21 @@
+Nem, az emobiliti.streamlit.app hivatkozást nem tudod használni a Snowflake-en belül, mert ez a cím kifejezetten az ingyenes Streamlit Community Cloud platformhoz tartozik.
+A két rendszer teljesen különálló világ, és a linkek működése az alábbiak szerint tér el:
+## 1. Az emobiliti.streamlit.app (Ingyenes verzió)
+Ez a hivatkozás azt jelenti, hogy az alkalmazásod a Streamlit saját, ingyenes felhőjében fut, és közvetlenül a GitHub kódtáradból dolgozik. Ez a link a nyilvános interneten érhető el (bárki megnyithatja, akinek megadod).
+## 2. Streamlit a Snowflake-en belül (Vállalati verzió)
+Amikor a Snowflake-en belül hozol létre egy Streamlit appot, az egy szigorúan zárt, biztonságos vállalati környezetben fut.
+
+* Az alkalmazásnak nem ilyen közvetlen webcíme lesz, hanem a Snowflake saját, hosszú belső URL-jét fogja használni (pl. https://snowflake.com...).
+* Ezt a linket csak azok tudják megnyitni, akiknek van felhasználónevük és jelszavuk a te Snowflake fiókodhoz. Külső felhasználók számára ez a felület láthatatlan.
+
+## Hogyan tudod összekötni a kettőt, ha mégis a Snowflake adatait szeretnéd használni?
+Ha azt szeretnéd, hogy az alkalmazásod a jól megszokott emobiliti.streamlit.app címen fusson, de a háttérben ne a GitHubos CSV-ből, hanem a Snowflake adatbázisodból olvassa ki az adatokat, az teljesen kivitelezhető!
+Ehhez a következőket kell tenned:
+
+   1. Hagyd az alkalmazást az ingyenes Streamlit Cloudban (így megmarad a .[streamlit.app](https://streamlit.io/) hivatkozásod).
+   2. A Python kódodba telepítsd a snowflake-connector-python vagy snowflake-snowpark-python könyvtárat.
+   3. A Streamlit Secrets (titkos beállítások) menüpontjában add meg a Snowflake fiókod elérhetőségét (felhasználónév, jelszó, raktár).
+   4. A kódodban a CSV beolvasása helyett írj egy SQL lekérdezést, ami közvetlenül a Snowflake tábládból húzza le az adatokat az ingyenes appod alá.
+
+Szeretnéd, hogy megmutassam azt a Python kódrészletet, amivel az ingyenes emobiliti.streamlit.app alkalmazásodból közvetlenül be tudsz jelentkezni és adatokat tudsz lekérdezni a Snowflake adatbázisodból?
+

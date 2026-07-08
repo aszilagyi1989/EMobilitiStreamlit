@@ -94,8 +94,21 @@ with st.sidebar:
   if selected_year != "Aktuális adatok":
     # Ha a felhasználó egy konkrét év végét választja ki
     RAW_DATAS = load_data2()
+
     RAW_DATAS["Berendezés üzembehelyezésének dátuma"] = pd.to_datetime(RAW_DATAS["Berendezés üzembehelyezésének dátuma"], format = "mixed", errors = "coerce")
     RAW_DATAS["Berendezés leszerelésének dátuma"] = pd.to_datetime(RAW_DATAS["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
+    
+    # 2. ÚJ JAVÍTÓ LOGIKA: Ha az évszám 222, vagy a dátum NaT lett a hiba miatt, 
+    # de tudjuk, hogy ez a gép 2022-es (és a leszerelése üres, tehát még aktív):
+    # Kikeressük azokat a sorokat, ahol a leszerelés hiányzik, de az üzembehelyezés gyanús (222-es év vagy NaT)
+    gyanus_szurese = (
+        (RAW_DATAS["Berendezés üzembehelyezésének dátuma"].dt.year == 222) | 
+        (RAW_DATAS["Berendezés üzembehelyezésének dátuma"].isna())
+    ) & (RAW_DATAS["Berendezés leszerelésének dátuma"].isna())
+    
+    # Kényszerítjük rájuk a javított, pontos 2022-02-26-os dátumot
+    RAW_DATAS.loc[gyanus_szurese, "Berendezés üzembehelyezésének dátuma"] = pd.Timestamp("2022-02-26")
+    
     
     # Kivágjuk az évszámot a szövegből (pl. "2025.12.31" -> 2025) és felépítjük a datetime objektumot
     year_int = int(selected_year.split(".")[0])
