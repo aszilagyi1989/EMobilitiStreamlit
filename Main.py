@@ -154,7 +154,7 @@ with st.sidebar:
   else:
     filtered_Locations = filtered_DATAS.copy()
   
-  # coordinates = st.checkbox("Javított koordinátákkal")
+  coordinates = st.checkbox("Javított koordinátákkal")
 
 # tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["🗺️ Térkép", "📊 Piaci Elemzés (Analyst)", "🔬 Klaszterezés (Scientist)", "⚠️ Adathibák & Anomáliák", "⏳ Élettartam Elemzés", "⚪ Fehér Foltok Elemzése"])
 
@@ -204,10 +204,10 @@ if selected == "Térkép":
           message += f"<br>Egyéb DC csatl.: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
       
     popup_text = f"Üzemeltető: {row['Töltőberendezés üzemeltető neve']}<br>Cím: {(row['IRSZ_VAROS'] + ', ' + row['Töltőberendezés közterülete'])} {message}"
-    # if coordinates:
-    #   callback_data.append([row["lat"], row["long"], popup_text])
-    # else:
-    callback_data.append([row["Töltőberendezés GPSKoordiN"], row["Töltőberendezés GPSKoordiE"], popup_text])
+    if coordinates:
+      callback_data.append([row["lat"], row["long"], popup_text])
+    else:
+      callback_data.append([row["Töltőberendezés GPSKoordiN"], row["Töltőberendezés GPSKoordiE"], popup_text])
 
   callback = """
     function (row) {
@@ -221,12 +221,12 @@ if selected == "Térkép":
   FastMarkerCluster(data = callback_data, callback=callback).add_to(map)
   
   if not filtered_Locations.empty:
-    # if coordinates:
-    #   sw = filtered_Locations[['lat', 'long']].min().tolist()
-    #   ne = filtered_Locations[['lat', 'long']].max().tolist()
-    # else:
-    sw = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].min().tolist()
-    ne = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].max().tolist()
+    if coordinates:
+      sw = filtered_Locations[['lat', 'long']].min().tolist()
+      ne = filtered_Locations[['lat', 'long']].max().tolist()
+    else:
+      sw = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].min().tolist()
+      ne = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].max().tolist()
     map.fit_bounds([sw, ne])
   
   st_folium(map, width = 'stretch', height = 600, returned_objects = [], key = "töltő_térkép")
@@ -284,14 +284,14 @@ if selected == "Klaszterezés":
   st.write("Ez a gépi tanulási modell a GPS koordináták alapján csoportosítja a szűrt töltőállomásokat optimalizált hálózati gócokba (hubokba).")
   if len(filtered_Locations) >= 3:
     # 1. Felkészítjük a koordináta adatokat a modell számára
-    # if coordinates:
-    #   X = filtered_Locations[['lat', 'long']]
-    #   lat_Name = "lat"
-    #   long_Name = "long"
-    # else:
-    X = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']]
-    lat_Name = "Töltőberendezés GPSKoordiN"
-    long_Name = "Töltőberendezés GPSKoordiE"
+    if coordinates:
+      X = filtered_Locations[['lat', 'long']]
+      lat_Name = "lat"
+      long_Name = "long"
+    else:
+      X = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']]
+      lat_Name = "Töltőberendezés GPSKoordiN"
+      long_Name = "Töltőberendezés GPSKoordiE"
     
     # Csúszka a klaszterek (csoportok) számának dinamikus beállításához
     num_clusters = st.slider("Klaszterek (Hálózati gócok) száma:", min_value = 2, max_value = min(10, len(filtered_Locations)), value = 3)
