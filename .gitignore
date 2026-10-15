@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 .Rproj
+.csv
+.streamlit/secrets.toml
+CSV/*.csv

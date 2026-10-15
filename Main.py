@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import pandas as pd
 from datetime import datetime
+from databricks import sql
 import folium
 from folium.plugins import FastMarkerCluster
 from streamlit_folium import st_folium
@@ -9,36 +10,79 @@ from streamlit_option_menu import option_menu
 import plotly.express as px
 from sklearn.cluster import KMeans
 
+@st.cache_resource
+def get_databricks_connection():
+  return sql.connect(
+    server_hostname = st.secrets["DATABRICKS_SERVER_HOSTNAME"], 
+    http_path = st.secrets["DATABRICKS_HTTP_PATH"],
+    access_token = st.secrets["DATABRICKS_TOKEN"]
+  )
+
 @st.cache_data
-def fetch_raw_data():
-  directory = os.path.dirname(os.path.abspath(__file__))
-  df = pd.read_csv(os.path.join(directory, "CSV", "2025_KSH__Emobiliti_v3.csv"), sep = ";", decimal = ",")
+def load_databricks_EmobilitiData(): # fetch_raw_data():
+  conn = get_databricks_connection()
+  cursor = conn.cursor()
+  cursor.execute("select * from DQ.EMOBILITI_2025_V3")
+  EMOBILITI = cursor.fetchall_arrow().to_pandas()
   
-  return df
+  cursor.close()
+  conn.close()
+  
+  EMOBILITI['DQEA007'] = pd.to_numeric(EMOBILITI['DQEA007'].astype(str).str.replace(',', '.'), errors = 'coerce')
+  EMOBILITI['DQEA008'] = pd.to_numeric(EMOBILITI['DQEA008'].astype(str).str.replace(',', '.'), errors = 'coerce')
+  
+  EMOBILITI['lat'] = pd.to_numeric(EMOBILITI['lat'].astype(str).str.replace(',', '.'), errors = 'coerce')
+  EMOBILITI['long'] = pd.to_numeric(EMOBILITI['long'].astype(str).str.replace(',', '.'), errors = 'coerce')
+  
+  EMOBILITI['DQEA009'] = pd.to_numeric(EMOBILITI['DQEA009'], errors = 'coerce')
+  EMOBILITI['DQEA013'] = pd.to_numeric(EMOBILITI['DQEA013'], errors = 'coerce')
+  EMOBILITI['DQEA014'] = pd.to_numeric(EMOBILITI['DQEA014'], errors = 'coerce')
+  EMOBILITI['DQEA015'] = pd.to_numeric(EMOBILITI['DQEA015'], errors = 'coerce')
+  EMOBILITI['DQEA016'] = pd.to_numeric(EMOBILITI['DQEA016'], errors = 'coerce')
+  EMOBILITI['DQEA017'] = pd.to_numeric(EMOBILITI['DQEA017'], errors = 'coerce')
+  EMOBILITI['DQEA018'] = pd.to_numeric(EMOBILITI['DQEA018'], errors = 'coerce')
+  EMOBILITI['DQEA019'] = pd.to_numeric(EMOBILITI['DQEA019'], errors = 'coerce')
+  EMOBILITI['DQEA020'] = pd.to_numeric(EMOBILITI['DQEA020'], errors = 'coerce')
+  EMOBILITI['DQEA021'] = pd.to_numeric(EMOBILITI['DQEA021'], errors = 'coerce')
+  EMOBILITI['DQEA022'] = pd.to_numeric(EMOBILITI['DQEA022'], errors = 'coerce')
+  EMOBILITI['DQEA023'] = pd.to_numeric(EMOBILITI['DQEA023'], errors = 'coerce')
+  EMOBILITI['DQEA024'] = pd.to_numeric(EMOBILITI['DQEA024'], errors = 'coerce')
+  EMOBILITI['DQEA025'] = pd.to_numeric(EMOBILITI['DQEA025'], errors = 'coerce')
+  EMOBILITI['DQEA026'] = pd.to_numeric(EMOBILITI['DQEA026'], errors = 'coerce')
+  EMOBILITI['DQEA027'] = pd.to_numeric(EMOBILITI['DQEA027'], errors = 'coerce')
+  EMOBILITI['DQEA028'] = pd.to_numeric(EMOBILITI['DQEA028'], errors = 'coerce')
+  EMOBILITI['DQEA029'] = pd.to_numeric(EMOBILITI['DQEA029'], errors = 'coerce')
+  
+  # EMOBILITI = EMOBILITI.dropna(subset = ['DQEA007', 'DQEA008', 'lat', 'long']).copy()
+  
+  # directory = os.path.dirname(os.path.abspath(__file__))
+  # df = pd.read_csv(os.path.join(directory, "CSV", "2025_KSH__Emobiliti_v3.csv"), sep = ";", decimal = ",")
+  
+  return EMOBILITI # df
 
 @st.cache_data
 def load_data():
-  df = fetch_raw_data().copy()
-  df["Berendezés leszerelésének dátuma"] = pd.to_datetime(df["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
-  df = df[(df["Berendezés leszerelésének dátuma"] > datetime.now()) | (df["Berendezés leszerelésének dátuma"].isna())]
-  df["IRSZ_VAROS"] = (df["Töltőberendezés irányítószáma"].astype(str) + " " + df["Töltőberendezés település megnevezése"])
+  df = load_databricks_EmobilitiData().copy() # fetch_raw_data().copy()
+  df["DQEA012"] = pd.to_datetime(df["DQEA012"], format = "mixed", errors = "coerce")
+  df = df[(df["DQEA012"] > datetime.now()) | (df["DQEA012"].isna())]
+  df["IRSZ_VAROS"] = (df["DQEA003"].astype(str) + " " + df["DQEA005"])
 
   return df
 
 @st.cache_data(ttl = 1)
 def load_data2():
-  df = fetch_raw_data().copy()
-  df["Berendezés leszerelésének dátuma"] = pd.to_datetime(df["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
-  df["IRSZ_VAROS"] = (df["Töltőberendezés irányítószáma"].astype(str) + " " + df["Töltőberendezés település megnevezése"])
+  df = load_databricks_EmobilitiData().copy() # fetch_raw_data().copy()
+  df["DQEA012"] = pd.to_datetime(df["DQEA012"], format = "mixed", errors = "coerce")
+  df["IRSZ_VAROS"] = (df["DQEA003"].astype(str) + " " + df["DQEA005"])
 
   return df
 
 @st.cache_data
 def load_megszunt_data():
-  df = fetch_raw_data().copy()
-  df["Berendezés leszerelésének dátuma"] = pd.to_datetime(df["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
-  df = df[(df["Berendezés leszerelésének dátuma"] < datetime.now())]
-  df["IRSZ_VAROS"] = (df["Töltőberendezés irányítószáma"].astype(str) + " " + df["Töltőberendezés település megnevezése"])
+  df = load_databricks_EmobilitiData().copy() # fetch_raw_data().copy()
+  df["DQEA012"] = pd.to_datetime(df["DQEA012"], format = "mixed", errors = "coerce")
+  df = df[(df["DQEA012"] < datetime.now())]
+  df["IRSZ_VAROS"] = (df["DQEA003"].astype(str) + " " + df["DQEA005"])
 
   return df
 
@@ -95,12 +139,12 @@ with st.sidebar:
     # Ha a felhasználó egy konkrét év végét választja ki
     RAW_DATAS = load_data2()
     
-    # teszt_sorok = RAW_DATAS[RAW_DATAS["Berendezés üzembehelyezésének dátuma"].astype(str).str.contains("0222", na=False)]
+    # teszt_sorok = RAW_DATAS[RAW_DATAS["DQEA011"].astype(str).str.contains("0222", na=False)]
     # st.write("DEBUG - Talált 0222-es gépek száma a nyers adatban:", len(teszt_sorok))
     # st.dataframe(teszt_sorok) 
 
-    RAW_DATAS["Berendezés üzembehelyezésének dátuma"] = pd.to_datetime(RAW_DATAS["Berendezés üzembehelyezésének dátuma"], format = "mixed", errors = "coerce")
-    RAW_DATAS["Berendezés leszerelésének dátuma"] = pd.to_datetime(RAW_DATAS["Berendezés leszerelésének dátuma"], format = "mixed", errors = "coerce")
+    RAW_DATAS["DQEA011"] = pd.to_datetime(RAW_DATAS["DQEA011"], format = "mixed", errors = "coerce")
+    RAW_DATAS["DQEA012"] = pd.to_datetime(RAW_DATAS["DQEA012"], format = "mixed", errors = "coerce")
     
     # Kivágjuk az évszámot a szövegből (pl. "2025.12.31" -> 2025) és felépítjük a datetime objektumot
     year_int = int(selected_year.split(".")[0])
@@ -108,8 +152,8 @@ with st.sidebar:
     
     # A szűrésnél MIND KÉT feltétel ugyanazt a dinamikus határidőt használja
     DATAS = RAW_DATAS[
-      (RAW_DATAS["Berendezés üzembehelyezésének dátuma"] <= hatarido) & 
-      ((RAW_DATAS["Berendezés leszerelésének dátuma"] >= hatarido) | (RAW_DATAS["Berendezés leszerelésének dátuma"].isna()))
+      (RAW_DATAS["DQEA011"] <= hatarido) & 
+      ((RAW_DATAS["DQEA012"] >= hatarido) | (RAW_DATAS["DQEA012"].isna()))
     ]
     
     default_value = "1007 Budapest"
@@ -131,17 +175,17 @@ with st.sidebar:
   
   full_City = st.checkbox("Csak településnevek (irányítószám nélkül)")
   if full_City:
-    Cities_All = sorted(DATAS["Töltőberendezés település megnevezése"].unique().tolist())
+    Cities_All = sorted(DATAS["DQEA005"].unique().tolist())
     City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, Cities_All)
-    filtered_DATAS = DATAS[DATAS["Töltőberendezés település megnevezése"].isin(City)]
+    filtered_DATAS = DATAS[DATAS["DQEA005"].isin(City)]
   else:
     Cities_All = sorted(DATAS["IRSZ_VAROS"].unique().tolist())
     City = st.multiselect("Töltőberendezés település megnevezése", Cities_All, Cities_All)
     filtered_DATAS = DATAS[DATAS["IRSZ_VAROS"].isin(City)]
   
-  Names_All = sorted(filtered_DATAS["Töltőberendezés üzemeltető neve"].unique().tolist())
+  Names_All = sorted(filtered_DATAS["DQEA002"].unique().tolist())
   Name = st.multiselect("Töltőberendezés üzemeltető neve", Names_All, Names_All)
-  filtered_DATAS = filtered_DATAS[filtered_DATAS["Töltőberendezés üzemeltető neve"].isin(Name)]
+  filtered_DATAS = filtered_DATAS[filtered_DATAS["DQEA002"].isin(Name)]
   
   Types_All = sorted(filtered_DATAS["DQEA030"].fillna("Nincs megadva").unique().tolist())
   selected_plugs = st.selectbox("Csatlakozó típusa", Types_All, index = None, placeholder = "Válassz csatlakozótípust!")
@@ -166,48 +210,48 @@ if selected == "Térkép":
     message = ""
     # if selected_year == "Aktuális adatok":
       # if work:
-    message += f"<br>Üzembehelyezés dátuma: {str(row['Berendezés üzembehelyezésének dátuma'])[:10]}"
-    message += f"<br>Leszerelés dátuma: {str(row['Berendezés leszerelésének dátuma'])[:10]}"
+    message += f"<br>Üzembehelyezés dátuma: {str(row['DQEA011'])[:10]}"
+    message += f"<br>Leszerelés dátuma: {str(row['DQEA012'])[:10]}"
     
     if selected_plugs:
       if selected_plugs == "csak AC":
-        if row['Type2 csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Type2 csatl.: {row['Type2 csatlakozó teljesítménye [kW, per darab]'] / row['Type2 csatlakozó darabszáma [db]']:.0f} kw és {row['Type2 csatlakozó darabszáma [db]']} db"
+        if row['DQEA018'] != 0:
+          message += f"<br>Type2 csatl.: {row['DQEA013'] / row['DQEA018']:.0f} kw és {row['DQEA018']} db"
           
-        if row['Egyéb AC csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Egyéb AC csatl.: {row['Egyéb AC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb AC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb AC csatlakozó darabszáma [db]']} db"
+        if row['DQEA019'] != 0:
+          message += f"<br>Egyéb AC csatl.: {row['DQEA014'] / row['DQEA019']:.0f} kw és {row['DQEA019']} db"
       
       if selected_plugs == "csak DC":
-        if row['CCS2 csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>CCS2 csatl.: {row['CCS2 csatlakozó teljesítménye [kW, per darab]'] / row['CCS2 csatlakozó darabszáma [db]']:.0f} kw és {row['CCS2 csatlakozó darabszáma [db]']} db"
+        if row['DQEA020'] != 0:
+          message += f"<br>CCS2 csatl.: {row['DQEA015'] / row['DQEA020']:.0f} kw és {row['DQEA020']} db"
               
-        if row['Chademo csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Chademo csatl.: {row['Chademo csatlakozó teljesítménye [kW, per darab]'] / row['Chademo csatlakozó darabszáma [db]']:.0f} kw és {row['Chademo csatlakozó darabszáma [db]']} db"
+        if row['DQEA021'] != 0:
+          message += f"<br>Chademo csatl.: {row['DQEA016'] / row['DQEA021']:.0f} kw és {row['DQEA021']} db"
               
-        if row['Egyéb DC csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Egyéb DC csatl.: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
+        if row['DQEA022'] != 0:
+          message += f"<br>Egyéb DC csatl.: {row['DQEA017'] / row['DQEA022']:.0f} kw és {row['DQEA022']} db"
     
       if selected_plugs == "AC és DC képes":
-        if row['Type2 csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Type2 csatl.: {row['Type2 csatlakozó teljesítménye [kW, per darab]'] / row['Type2 csatlakozó darabszáma [db]']:.0f} kw és {row['Type2 csatlakozó darabszáma [db]']} db"
+        if row['DQEA018'] != 0:
+          message += f"<br>Type2 csatl.: {row['DQEA013'] / row['DQEA018']:.0f} kw és {row['DQEA018']} db"
           
-        if row['Egyéb AC csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Egyéb AC csatl.: {row['Egyéb AC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb AC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb AC csatlakozó darabszáma [db]']} db"
+        if row['DQEA019'] != 0:
+          message += f"<br>Egyéb AC csatl.: {row['DQEA014'] / row['DQEA019']:.0f} kw és {row['DQEA019']} db"
       
-        if row['CCS2 csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>CCS2 csatl.: {row['CCS2 csatlakozó teljesítménye [kW, per darab]'] / row['CCS2 csatlakozó darabszáma [db]']:.0f} kw és {row['CCS2 csatlakozó darabszáma [db]']} db"
+        if row['DQEA020'] != 0:
+          message += f"<br>CCS2 csatl.: {row['DQEA015'] / row['DQEA020']:.0f} kw és {row['DQEA020']} db"
               
-        if row['Chademo csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Chademo csatl.: {row['Chademo csatlakozó teljesítménye [kW, per darab]'] / row['Chademo csatlakozó darabszáma [db]']:.0f} kw és {row['Chademo csatlakozó darabszáma [db]']} db"
+        if row['DQEA021'] != 0:
+          message += f"<br>Chademo csatl.: {row['DQEA016'] / row['DQEA021']:.0f} kw és {row['DQEA021']} db"
               
-        if row['Egyéb DC csatlakozó darabszáma [db]'] != 0:
-          message += f"<br>Egyéb DC csatl.: {row['Egyéb DC csatlakozó teljesítménye [kW, per darab]'] / row['Egyéb DC csatlakozó darabszáma [db]']:.0f} kw és {row['Egyéb DC csatlakozó darabszáma [db]']} db"
+        if row['DQEA022'] != 0:
+          message += f"<br>Egyéb DC csatl.: {row['DQEA017'] / row['DQEA022']:.0f} kw és {row['DQEA022']} db"
       
-    popup_text = f"Üzemeltető: {row['Töltőberendezés üzemeltető neve']}<br>Cím: {(row['IRSZ_VAROS'] + ', ' + row['Töltőberendezés közterülete'])} {message}"
+    popup_text = f"Üzemeltető: {row['DQEA002']}<br>Cím: {(row['IRSZ_VAROS'] + ', ' + row['DQEA006'])} {message}"
     if coordinates:
       callback_data.append([row["lat"], row["long"], popup_text])
     else:
-      callback_data.append([row["Töltőberendezés GPSKoordiN"], row["Töltőberendezés GPSKoordiE"], popup_text])
+      callback_data.append([row["DQEA007"], row["DQEA008"], popup_text])
 
   callback = """
     function (row) {
@@ -218,15 +262,15 @@ if selected == "Térkép":
   """
 
   # Itt adjuk át a callback-et
-  FastMarkerCluster(data = callback_data, callback=callback).add_to(map)
+  FastMarkerCluster(data = callback_data, callback = callback).add_to(map)
   
   if not filtered_Locations.empty:
     if coordinates:
       sw = filtered_Locations[['lat', 'long']].min().tolist()
       ne = filtered_Locations[['lat', 'long']].max().tolist()
     else:
-      sw = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].min().tolist()
-      ne = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']].max().tolist()
+      sw = filtered_Locations[['DQEA007', 'DQEA008']].min().tolist()
+      ne = filtered_Locations[['DQEA007', 'DQEA008']].max().tolist()
     map.fit_bounds([sw, ne])
   
   st_folium(map, width = 'stretch', height = 600, returned_objects = [], key = "töltő_térkép")
@@ -239,13 +283,11 @@ if selected == "Térkép":
   
   with col2:
     st.metric(label = label2, value = f"{sorok_szama2} db")
-    
-  
 
 if selected ==  "Piaci Elemzés":
   if not filtered_Locations.empty:
     st.subheader("Top Üzemeltetők töltőállomások száma alapján")
-    operator_counts = filtered_Locations["Töltőberendezés üzemeltető neve"].value_counts().reset_index()
+    operator_counts = filtered_Locations["DQEA002"].value_counts().reset_index()
     operator_counts.columns = ["Üzemeltető", "Töltőberendezések száma [db]"]
     
     fig = px.bar(
@@ -259,11 +301,11 @@ if selected ==  "Piaci Elemzés":
   
     st.subheader("Összegzett csatlakozási teljesítmények (kw)")
     total_kw = {
-        "Type2 AC": filtered_Locations['Type2 csatlakozó teljesítménye [kW, per darab]'].sum(),
-        "Egyéb AC": filtered_Locations['Egyéb AC csatlakozó teljesítménye [kW, per darab]'].sum(),
-        "CCS2 DC": filtered_Locations['CCS2 csatlakozó teljesítménye [kW, per darab]'].sum(),
-        "Chademo DC": filtered_Locations['Chademo csatlakozó teljesítménye [kW, per darab]'].sum(),
-        "Egyéb DC": filtered_Locations['Egyéb DC csatlakozó teljesítménye [kW, per darab]'].sum()
+        "Type2 AC": filtered_Locations['DQEA013'].sum(),
+        "Egyéb AC": filtered_Locations['DQEA014'].sum(),
+        "CCS2 DC": filtered_Locations['DQEA015'].sum(),
+        "Chademo DC": filtered_Locations['DQEA016'].sum(),
+        "Egyéb DC": filtered_Locations['DQEA017'].sum()
     }
     kw_df = pd.DataFrame(list(total_kw.items()), columns=["Csatlakozó típus", "Összteljesítmény [kW]"])
     
@@ -289,9 +331,9 @@ if selected == "Klaszterezés":
       lat_Name = "lat"
       long_Name = "long"
     else:
-      X = filtered_Locations[['Töltőberendezés GPSKoordiN', 'Töltőberendezés GPSKoordiE']]
-      lat_Name = "Töltőberendezés GPSKoordiN"
-      long_Name = "Töltőberendezés GPSKoordiE"
+      X = filtered_Locations[['DQEA007', 'DQEA008']]
+      lat_Name = "DQEA007"
+      long_Name = "DQEA008"
     
     # Csúszka a klaszterek (csoportok) számának dinamikus beállításához
     num_clusters = st.slider("Klaszterek (Hálózati gócok) száma:", min_value = 2, max_value = min(10, len(filtered_Locations)), value = 3)
@@ -306,10 +348,10 @@ if selected == "Klaszterezés":
     # 3. Megjelenítés egy interaktív Plotly térképen
     fig_ml = px.scatter_map(
       filtered_Locations,
-      lat = lat_Name, # "Töltőberendezés GPSKoordiN",
-      lon = long_Name, # "Töltőberendezés GPSKoordiE",
+      lat = lat_Name, # "DQEA007",
+      lon = long_Name, # "DQEA008",
       color = filtered_Locations['Klaszter_ID'].astype(str),
-      hover_name = "Töltőberendezés üzemeltető neve",
+      hover_name = "DQEA002",
       hover_data = ["IRSZ_VAROS"],
       zoom = 6,
       height = 500,
@@ -318,7 +360,7 @@ if selected == "Klaszterezés":
     
     # Ingyenes, regisztráció nélkül működő térképstílus beállítása
     fig_ml.update_layout(
-      mapbox_style = "open-street-map",
+      map_style = "open-street-map", # JAVÍTÁS: mapbox_style helyett map_style!
       margin = {"r":0, "t":40, "l":0, "b":0},
       legend_title = "Klaszter azonosító"
     )
@@ -348,29 +390,29 @@ if selected == "Anomáliák":
 
     # 1. Összesítjük a fizikai darabszámokat
     anomaly_df['Összes_Fizikai_Csatlakozó'] = (
-        anomaly_df['Type2 csatlakozó darabszáma [db]'].fillna(0) + 
-        anomaly_df['Egyéb AC csatlakozó darabszáma [db]'].fillna(0) +
-        anomaly_df['CCS2 csatlakozó darabszáma [db]'].fillna(0) + 
-        anomaly_df['Chademo csatlakozó darabszáma [db]'].fillna(0) + 
-        anomaly_df['Egyéb DC csatlakozó darabszáma [db]'].fillna(0)
+        anomaly_df['DQEA018'].fillna(0) + 
+        anomaly_df['DQEA019'].fillna(0) +
+        anomaly_df['DQEA020'].fillna(0) + 
+        anomaly_df['DQEA021'].fillna(0) + 
+        anomaly_df['DQEA022'].fillna(0)
     )
 
     # 2. Összesítjük a részletező kategória oszlopok darabszámait (utolsó 7 oszlop együtt)
     anomaly_df['Összes_Kategória_Darabszám'] = (
-        anomaly_df['Csatlakozó darabszám: Slow AC: P <7.4 kW [db]'].fillna(0) +
-        anomaly_df['Csatlakozó darabszám: Medium-speed AC: 7.4 kW ≤ P ≤ 22 kW  [db]'].fillna(0) +
-        anomaly_df['Csatlakozó darabszám: Fast AC: P > 22 kW  [db]'].fillna(0) +
-        anomaly_df['Csatlakozó darabszám: Slow DC: P < 50 kW  [db]'].fillna(0) +
-        anomaly_df['Csatlakozó darabszám: Fast DC: 50 kW ≤ P < 150 kW  [db]'].fillna(0) +
-        anomaly_df['Csatlakozó darabszám: Level 1- Ultra fast DC: 150 kW ≤ P < 350 kW  [db]'].fillna(0) +
-        anomaly_df['Csatlakozó darabszám: Level 2- Ultra fast DC: P ≥ 350 kW  [db]'].fillna(0)
+        anomaly_df['DQEA023'].fillna(0) +
+        anomaly_df['DQEA024'].fillna(0) +
+        anomaly_df['DQEA025'].fillna(0) +
+        anomaly_df['DQEA026'].fillna(0) +
+        anomaly_df['DQEA027'].fillna(0) +
+        anomaly_df['DQEA028'].fillna(0) +
+        anomaly_df['DQEA029'].fillna(0)
     )
 
     # --- ANOMÁLIA SZABÁLYOK ---
 
     # A: Magyarbóly-típusú hiba (Van max kW, de 0 db az összes fizikai csatlakozó)
     anomaly_df['Fantom_Töltő_Hiba'] = (
-        (anomaly_df['Töltőberendezés által felvehető maximális teljesítmény [kW]'].fillna(0) > 0) & 
+        (anomaly_df['DQEA009'].fillna(0) > 0) & 
         (anomaly_df['Összes_Fizikai_Csatlakozó'] == 0)
     )
 
@@ -381,7 +423,7 @@ if selected == "Anomáliák":
 
     # C: Főösszeg hiba (A 'Csatlakozási pontok száma összesen' nem egyezik a fizikai oszlopok összegével)
     anomaly_df['Főösszeg_Eltérés_Hiba'] = (
-        anomaly_df['Csatlakozási pontok száma összesen'].fillna(0) != anomaly_df['Összes_Fizikai_Csatlakozó']
+        anomaly_df['DQEA010'].fillna(0) != anomaly_df['Összes_Fizikai_Csatlakozó']
     )
 
     # Végleges szűrés kombinálása
@@ -399,27 +441,48 @@ if selected == "Anomáliák":
       st.error("⚠️ Logikai vagy matematikai ellentmondást tartalmazó állomások listája:")
       
       display_cols = [
-          'Töltőberendezés üzemeltető neve', 
-          'Töltőberendezés település megnevezése', 
-          'Töltőberendezés közterülete',
-          'Töltőberendezés által felvehető maximális teljesítmény [kW]',
-          'Csatlakozási pontok száma összesen',
-          'Type2 csatlakozó darabszáma [db]',
-          'Egyéb AC csatlakozó darabszáma [db]', 
-          'CCS2 csatlakozó darabszáma [db]',
-          'Chademo csatlakozó darabszáma [db]',
-          'Egyéb DC csatlakozó darabszáma [db]',
-          'Csatlakozó darabszám: Slow AC: P <7.4 kW [db]',
-          'Csatlakozó darabszám: Medium-speed AC: 7.4 kW ≤ P ≤ 22 kW  [db]',
-          'Csatlakozó darabszám: Fast AC: P > 22 kW  [db]', 
-          'Csatlakozó darabszám: Slow DC: P < 50 kW  [db]',
-          'Csatlakozó darabszám: Fast DC: 50 kW ≤ P < 150 kW  [db]',
-          'Csatlakozó darabszám: Level 1- Ultra fast DC: 150 kW ≤ P < 350 kW  [db]',
-          'Csatlakozó darabszám: Level 2- Ultra fast DC: P ≥ 350 kW  [db]'
+          'DQEA002', 
+          'DQEA005', 
+          'DQEA006',
+          'DQEA009',
+          'DQEA010',
+          'DQEA018',
+          'DQEA019', 
+          'DQEA020',
+          'DQEA021',
+          'DQEA022',
+          'DQEA023',
+          'DQEA024',
+          'DQEA025', 
+          'DQEA026',
+          'DQEA027',
+          'DQEA028',
+          'DQEA029'
       ]
       
       existing_cols = [c for c in display_cols if c in anomalies.columns]
-      st.dataframe(anomalies[existing_cols], width = 'stretch')
+      
+      szep_nevek = {
+          'DQEA002': 'Üzemeltető',
+          'DQEA005': 'Település',
+          'DQEA006': 'Közterület',
+          'DQEA009': 'Felvehető maximális teljesítmény [kW]',
+          'DQEA010': 'Csatlakozási pontok száma összesen',
+          'DQEA018': 'Type2 csatlakozó db',
+          'DQEA019': 'Egyéb AC csatlakozó db',
+          'DQEA020': 'CCS2 csatlakozó db',
+          'DQEA021': 'Chademo csatlakozó db',
+          'DQEA022': 'Egyéb DC csatlakozó db',
+          'DQEA023': 'Slow AC db: P < 7.4 kW',
+          'DQEA024': 'Medium-speed AC db: 7.4 kW ? P ? 22 kW',
+          'DQEA025': 'Fast AC db: P > 22 kW',
+          'DQEA026': 'Slow DC db: P < 50 kW',
+          'DQEA027': 'Fast DC db: 50 kW ? P < 150 kW',
+          'DQEA028': 'Level 1- Ultra fast DC db: 150 kW ? P < 350 kW',
+          'DQEA029': 'Level 2- Ultra fast DC db: P ? 350 kW'
+      }
+      
+      st.dataframe(anomalies[existing_cols], width = 'stretch', column_config = szep_nevek, hide_index = True)
       
       # Statisztikai bontás
       st.subheader("📊 Kimutatás a hibatípusokról")
@@ -446,18 +509,18 @@ if selected == "Élettartam":
     survival_df = RAW_DATAS.copy()
     
     # Dátumok típuskonverziója a megadott pontos oszlopnevekkel
-    survival_df["Kezdő dátum"] = pd.to_datetime(survival_df["Berendezés üzembehelyezésének dátuma"], format="mixed", errors="coerce")
-    survival_df["Berendezés leszerelésének dátuma"] = pd.to_datetime(survival_df["Berendezés leszerelésének dátuma"], format="mixed", errors="coerce")
+    survival_df["Kezdő dátum"] = pd.to_datetime(survival_df["DQEA011"], format="mixed", errors="coerce")
+    survival_df["DQEA012"] = pd.to_datetime(survival_df["DQEA012"], format="mixed", errors="coerce")
     
     # Hiányzó üzembehelyezési dátumok eldobása (enélkül nem számolható élettartam)
     survival_df = survival_df.dropna(subset=["Kezdő dátum"])
     
     # Esemény (Event) meghatározása: 1 = leszerelve, 0 = még üzemel (cenzúrázott adat)
-    survival_df["Még üzemel"] = (survival_df["Berendezés leszerelésének dátuma"] > datetime.now()) | (survival_df["Berendezés leszerelésének dátuma"].isna())
+    survival_df["Még üzemel"] = (survival_df["DQEA012"] > datetime.now()) | (survival_df["DQEA012"].isna())
     survival_df["Observed_Event"] = survival_df["Még üzemel"].apply(lambda x: 0 if x else 1)
     
     # Végdátum rögzítése: ha még üzemel, a mai napig számoljuk az élettartamot
-    survival_df["Vég dátum"] = survival_df["Berendezés leszerelésének dátuma"]
+    survival_df["Vég dátum"] = survival_df["DQEA012"]
     survival_df.loc[survival_df["Még üzemel"] == True, "Vég dátum"] = datetime.now()
     
     # Élettartam kiszámítása hónapokban
@@ -472,11 +535,11 @@ if selected == "Élettartam":
       st.subheader("Csoportosított élettartam összehasonlítás")
       
       # Top 5 üzemeltető kiválasztása alapértelmezettnek a pontos oszlopnévvel
-      top_operators = survival_df["Töltőberendezés üzemeltető neve"].value_counts().head(5).index.tolist()
+      top_operators = survival_df["DQEA002"].value_counts().head(5).index.tolist()
       
       selected_op = st.multiselect(
           "Válasszon üzemeltetőket az életgörbe összehasonlításhoz (Top 5 alapértelmezett):", 
-          options=survival_df["Töltőberendezés üzemeltető neve"].unique().tolist(),
+          options=survival_df["DQEA002"].unique().tolist(),
           default=top_operators
       )
       
@@ -488,7 +551,7 @@ if selected == "Élettartam":
         
         # Kaplan-Meier túlélési görbe kiszámítása manuálisan (Pandas alapon)
         for op in selected_op:
-          op_df = survival_df[survival_df["Töltőberendezés üzemeltető neve"] == op].sort_values(by="Élettartam (hónap)")
+          op_df = survival_df[survival_df["DQEA002"] == op].sort_values(by="Élettartam (hónap)")
           
           if op_df.empty:
             continue
@@ -562,9 +625,9 @@ if selected == "Fehér Foltok":
     st.warning("Nincs megjeleníthető adat a jelenlegi szűrési feltételek mellett.")
   else:
     # 1. Településszintű aggregáció (kW és töltők száma)
-    city_coverage = white_DATAS.groupby("Töltőberendezés település megnevezése").agg(
-        Összes_Kapacitás_kW=('Töltőberendezés által felvehető maximális teljesítmény [kW]', 'sum'),
-        Töltőberendezések_Száma=('Csatlakozási pontok száma összesen', 'count')
+    city_coverage = white_DATAS.groupby("DQEA005").agg(
+        Összes_Kapacitás_kW=('DQEA009', 'sum'),
+        Töltőberendezések_Száma=('DQEA010', 'count')
     ).reset_index()
 
     # Kiszámoljuk az egy berendezésre jutó átlagos teljesítményt is a városban
@@ -587,11 +650,11 @@ if selected == "Fehér Foltok":
     # Kiválasztjuk a top n várost (Budapestet érdemes lehet külön figyelni, mert elviheti a pálmát)
     fig_top_cities = px.bar(
         city_coverage.head(top_n),
-        x="Töltőberendezés település megnevezése",
+        x="DQEA005",
         y="Összes_Kapacitás_kW",
         color="Töltőberendezések_Száma",
         labels={
-            "Töltőberendezés település megnevezése": "Település",
+            "DQEA005": "Település",
             "Összes_Kapacitás_kW": "Összteljesítmény (kW)",
             "Töltőberendezések_Száma": "Töltők száma (db)"
         },
@@ -615,7 +678,7 @@ if selected == "Fehér Foltok":
       with col_table:
         st.dataframe(
             white_spots.rename(columns={
-                "Töltőberendezés település megnevezése": "Település neve",
+                "DQEA005": "Település neve",
                 "Összes_Kapacitás_kW": "Összkapacitás (kW)",
                 "Töltőberendezések_Száma": "Regisztrált töltők (db)",
                 "Átlagos_Kapacitás_kW": "Átlagos töltőméret (kW)"
@@ -636,7 +699,7 @@ if selected == "Fehér Foltok":
         x = "Töltőberendezések_Száma",
         y = "Összes_Kapacitás_kW",
         size = "Átlagos_Kapacitás_kW",
-        hover_name = "Töltőberendezés település megnevezése",
+        hover_name = "DQEA005",
         labels = {
             "Töltőberendezések_Száma": "Töltőberendezések száma (db)",
             "Összes_Kapacitás_kW": "Összesített kapacitás (kW)"
